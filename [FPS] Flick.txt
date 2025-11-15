@@ -1,0 +1,594 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "SLEEP HUB",
+   Icon = 121030902371363, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+   LoadingTitle = "SLEEP HUB",
+   LoadingSubtitle = "by SLEEP HUB",
+   ShowText = "Rayfield", -- for mobile users to unhide rayfield, change if you'd like
+   Theme = "Dark Blue", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+
+   ToggleUIKeybind = "K", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil, -- Create a custom folder for your hub/game
+      FileName = "SLEEP HUB Hub"
+   },
+
+   Discord = {
+      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
+      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+   },
+
+   KeySystem = false, -- Set this to true to use our key system
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+   }
+})
+
+
+local Tab = Window:CreateTab("Tab Example", 4483362458) -- Title, Image
+
+
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
+local localPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- ตั้งค่า
+local SmartAim = {
+    Enabled = false,
+    Mode = "AutoShoot", -- "AutoShoot" = เห็น = ยิง
+    Smoothness = 0.4,
+    FOV = 200,
+    WallCheck = true,
+    TeamCheck = false,
+    MaxDistance = 1500,
+    ShowFOV = true,
+    ShootDelay = 0.05,
+    Target = nil,
+    IsShooting = false
+}
+
+-- ตัวแปร
+local fovCircle = nil
+local highlight = nil
+local shootThread = nil
+local connection = nil
+
+-- สร้าง FOV Circle
+local function createFOVCircle()
+    if fovCircle then fovCircle:Remove() end
+    fovCircle = Drawing.new("Circle")
+    fovCircle.Visible = false
+    fovCircle.Color = Color3.fromRGB(0, 255, 0)
+    fovCircle.Thickness = 2
+    fovCircle.Radius = SmartAim.FOV
+    fovCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    fovCircle.NumSides = 32
+    fovCircle.Filled = false
+    fovCircle.Transparency = 0.5
+end
+
+-- หาส่วนที่เห็นก่อน (ตามลำดับการมองเห็น)
+local function getVisiblePart(character)
+    local parts = {
+        "Head",
+        "UpperTorso", 
+        "LowerTorso",
+        "LeftUpperArm", "RightUpperArm",
+        "LeftUpperLeg", "RightUpperLeg",
+        "HumanoidRootPart"
+    }
+    
+    for _, partName in ipairs(parts) do
+        local part = character:FindFirstChild(partName)
+        if part then
+            local screenPos, visible = camera:WorldToViewportPoint(part.Position)
+            if visible then
+                return part, partName
+            end
+        end
+    end
+    return nil, nil
+end
+
+-- หาเป้าที่ใกล้ที่สุดและเห็น
+local function getClosestTarget()
+    if not localPlayer.Character then return nil end
+    
+    local mousePos = UserInputService:GetMouseLocation()
+    local closest = nil
+    local closestPart = nil
+    local shortest = SmartAim.FOV
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character then
+            if SmartAim.TeamCheck and player.Team == localPlayer.Team then continue end
+            
+            local part, partName = getVisiblePart(player.Character)
+            if part then
+                local dist = (part.Position - camera.CFrame.Position).Magnitude
+                
+                if dist <= SmartAim.MaxDistance then
+                    local screenPos = camera:WorldToViewportPoint(part.Position)
+                    local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                    
+                    if screenDist < shortest then
+                        -- ตรวจกำแพง
+                        if SmartAim.WallCheck then
+                            local ray = Ray.new(camera.CFrame.Position, (part.Position - camera.CFrame.Position).unit * dist)
+                            local hit = workspace:FindPartOnRayWithIgnoreList(ray, {localPlayer.Character})
+                            if not hit or player.Character:IsAncestorOf(hit) then
+                                shortest = screenDist
+                                closest = player
+                                closestPart = part
+                            end
+                        else
+                            shortest = screenDist
+                            closest = player
+                            closestPart = part
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return closest, closestPart
+end
+
+-- ล็อck เป้า
+local function aimAt(target, part)
+    if not target or not part then return end
+    
+    local screenPos = camera:WorldToViewportPoint(part.Position)
+    local mousePos = UserInputService:GetMouseLocation()
+    local delta = Vector2.new(screenPos.X - mousePos.X, screenPos.Y - mousePos.Y)
+    
+    pcall(function()
+        mousemoverel(delta.X * SmartAim.Smoothness, delta.Y * SmartAim.Smoothness)
+    end)
+end
+
+-- ไฮไลท์เป้า
+local function updateHighlight(target)
+    if not target or not target.Character then
+        if highlight then highlight:Destroy(); highlight = nil end
+        return
+    end
+    
+    if not highlight then
+        highlight = Instance.new("Highlight")
+        highlight.FillColor = Color3.fromRGB(0, 255, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.7
+        highlight.OutlineTransparency = 0
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    end
+    
+    highlight.Parent = target.Character
+end
+
+-- ยิงอัตโนมัติ
+local function autoShoot()
+    if shootThread then return end
+    
+    shootThread = task.spawn(function()
+        while SmartAim.Enabled and SmartAim.Mode == "AutoShoot" do
+            if SmartAim.Target then
+                if not SmartAim.IsShooting then
+                    SmartAim.IsShooting = true
+                    mouse1press()
+                end
+            else
+                if SmartAim.IsShooting then
+                    SmartAim.IsShooting = false
+                    mouse1release()
+                end
+            end
+            task.wait(SmartAim.ShootDelay)
+        end
+        
+        if SmartAim.IsShooting then
+            SmartAim.IsShooting = false
+            mouse1release()
+        end
+        shootThread = nil
+    end)
+end
+
+-- 🔫 Main Toggle
+local ToggleSmartAim = Tab:CreateToggle({
+   Name = "Smart Aimbot (เห็น = ยิง)",
+   CurrentValue = false,
+   Flag = "SmartAimToggle",
+   Callback = function(Value)
+       SmartAim.Enabled = Value
+       createFOVCircle()
+       
+       if Value then
+           connection = RunService.RenderStepped:Connect(function()
+               -- อัพเดท FOV
+               if fovCircle then
+                   fovCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+                   fovCircle.Radius = SmartAim.FOV
+                   fovCircle.Visible = SmartAim.ShowFOV
+               end
+               
+               -- หาเป้าที่เห็น
+               local target, part = getClosestTarget()
+               SmartAim.Target = target
+               
+               if target and part then
+                   aimAt(target, part)
+                   updateHighlight(target)
+               else
+                   updateHighlight(nil)
+               end
+           end)
+           
+           -- เริ่มยิงอัตโนมัติ
+           autoShoot()
+           
+           Rayfield:Notify({
+               Title = "Smart Aimbot เปิด",
+               Content = "ยิงอัตโนมัติเมื่อเห็นผู้เล่น",
+               Duration = 3
+           })
+       else
+           if connection then connection:Disconnect(); connection = nil end
+           if shootThread then task.cancel(shootThread); shootThread = nil end
+           
+           if fovCircle then fovCircle:Remove(); fovCircle = nil end
+           if highlight then highlight:Destroy(); highlight = nil end
+           
+           SmartAim.Target = nil
+           SmartAim.IsShooting = false
+           mouse1release()
+           
+           Rayfield:Notify({
+               Title = "Smart Aimbot ปิด",
+               Content = "หยุดการทำงาน",
+               Duration = 3
+           })
+       end
+   end,
+})
+
+-- ⚙️ Settings
+local Section = Tab:CreateSection("ตั้งค่า")
+
+local SmoothSlider = Tab:CreateSlider({
+   Name = "ความราบรื่น",
+   Range = {0, 1},
+   Increment = 0.05,
+   Suffix = "",
+   CurrentValue = SmartAim.Smoothness,
+   Flag = "SmartSmooth",
+   Callback = function(Value)
+       SmartAim.Smoothness = Value
+   end,
+})
+
+local FOVSlider = Tab:CreateSlider({
+   Name = "FOV",
+   Range = {0, 500},
+   Increment = 10,
+   Suffix = " px",
+   CurrentValue = SmartAim.FOV,
+   Flag = "SmartFOV",
+   Callback = function(Value)
+       SmartAim.FOV = Value
+   end,
+})
+
+local DistSlider = Tab:CreateSlider({
+   Name = "ระยะสูงสุด",
+   Range = {100, 5000},
+   Increment = 100,
+   Suffix = " m",
+   CurrentValue = SmartAim.MaxDistance,
+   Flag = "SmartDist",
+   Callback = function(Value)
+       SmartAim.MaxDistance = Value
+   end,
+})
+
+local ShootDelaySlider = Tab:CreateSlider({
+   Name = "หน่วงยิง",
+   Range = {0.01, 0.5},
+   Increment = 0.01,
+   Suffix = " s",
+   CurrentValue = SmartAim.ShootDelay,
+   Flag = "SmartShootDelay",
+   Callback = function(Value)
+       SmartAim.ShootDelay = Value
+   end,
+})
+
+local WallToggle = Tab:CreateToggle({
+   Name = "ไม่ล็อคคนหลังกำแพง",
+   CurrentValue = true,
+   Flag = "SmartWall",
+   Callback = function(Value)
+       SmartAim.WallCheck = Value
+   end,
+})
+
+local TeamToggle = Tab:CreateToggle({
+   Name = "ไม่ล็อคเพื่อนร่วมทีม",
+   CurrentValue = false,
+   Flag = "SmartTeam",
+   Callback = function(Value)
+       SmartAim.TeamCheck = Value
+   end,
+})
+
+local FOVToggle = Tab:CreateToggle({
+   Name = "แสดงวง FOV",
+   CurrentValue = true,
+   Flag = "SmartFOVShow",
+   Callback = function(Value)
+       SmartAim.ShowFOV = Value
+   end,
+})
+
+-- 🎨 สีไฮไลท์
+local HighlightColor = Tab:CreateColorPicker({
+   Name = "สีไฮไลท์เป้า",
+   Color = Color3.fromRGB(0, 255, 0),
+   Flag = "HighlightColor",
+   Callback = function(Value)
+       if highlight then
+           highlight.FillColor = Value
+       end
+   end,
+})
+
+
+
+
+
+
+
+local Tab = Window:CreateTab("Tab Example", 4483362458)
+
+
+
+
+
+
+-- สร้าง ESP แบบง่ายที่เปิด-ปิดคู่กับ Toggle
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local workspace = game:GetService("Workspace")
+
+local localPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local ESP = {
+    Enabled = false,
+    Objects = {},
+    MaxDistance = 2000,
+    Colors = {
+        Box = Color3.fromRGB(255, 0, 0),
+        Name = Color3.fromRGB(255, 255, 255)
+    }
+}
+
+-- ล้าง ESP เก่าถ้ามี
+if localPlayer.PlayerGui:FindFirstChild("SimpleESP") then
+    localPlayer.PlayerGui.SimpleESP:Destroy()
+end
+
+-- สร้าง ESP ให้ผู้เล่น
+function createESP(player)
+    if player == localPlayer or ESP.Objects[player] then return end
+    
+    local objects = { drawings = {}, connection = nil }
+    
+    -- กรอบ 4 เส้น
+    for i = 1, 4 do
+        local line = Drawing.new("Line")
+        line.Visible = false
+        line.Color = ESP.Colors.Box
+        line.Thickness = 2
+        table.insert(objects.drawings, line)
+    end
+    
+    -- ชื่อ
+    local name = Drawing.new("Text")
+    name.Visible = false
+    name.Text = player.Name
+    name.Color = ESP.Colors.Name
+    name.Size = 16
+    name.Center = true
+    name.Outline = true
+    table.insert(objects.drawings, name)
+    
+    -- Loop อัพเดท
+    objects.connection = RunService.RenderStepped:Connect(function()
+        if not ESP.Enabled then
+            for _, d in ipairs(objects.drawings) do d.Visible = false end
+            return
+        end
+        
+        local char = player.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then
+            for _, d in ipairs(objects.drawings) do d.Visible = false end
+            return
+        end
+        
+        local hrp = char.HumanoidRootPart
+        local dist = (hrp.Position - camera.CFrame.Position).Magnitude
+        if dist > ESP.MaxDistance then
+            for _, d in ipairs(objects.drawings) do d.Visible = false end
+            return
+        end
+        
+        local pos, vis = camera:WorldToViewportPoint(hrp.Position)
+        if not vis then
+            for _, d in ipairs(objects.drawings) do d.Visible = false end
+            return
+        end
+        
+        -- ขนาดกรอบ
+        local scale = 2
+        local head = char:FindFirstChild("Head")
+        if head then
+            local headPos = camera:WorldToViewportPoint(head.Position)
+            scale = math.abs(pos.Y - headPos.Y) * 0.8
+        end
+        
+        local w, h = scale * 2, scale * 3
+        local box = {
+            tl = Vector2.new(pos.X - w, pos.Y - h),
+            tr = Vector2.new(pos.X + w, pos.Y - h),
+            bl = Vector2.new(pos.X - w, pos.Y + h),
+            br = Vector2.new(pos.X + w, pos.Y + h)
+        }
+        
+        -- วาดกรอบ
+        local lines = objects.drawings
+        lines[1].From = box.tl; lines[1].To = box.tr; lines[1].Visible = true
+        lines[2].From = box.bl; lines[2].To = box.br; lines[2].Visible = true
+        lines[3].From = box.tl; lines[3].To = box.bl; lines[3].Visible = true
+        lines[4].From = box.tr; lines[4].To = box.br; lines[4].Visible = true
+        
+        -- ชื่อ
+        lines[5].Visible = true
+        lines[5].Text = player.Name
+        lines[5].Position = Vector2.new(pos.X, pos.Y - h - 20)
+    end)
+    
+    ESP.Objects[player] = objects
+end
+
+-- ลบ ESP
+function removeESP(player)
+    if ESP.Objects[player] then
+        if ESP.Objects[player].connection then
+            ESP.Objects[player].connection:Disconnect()
+        end
+        for _, d in ipairs(ESP.Objects[player].drawings) do
+            d:Remove()
+        end
+        ESP.Objects[player] = nil
+    end
+end
+
+-- 🔗 Toggle หลัก - ใช้คู่กับ ESP โดยตรง
+local ToggleESP = Tab:CreateToggle({
+   Name = "Simple ESP",
+   CurrentValue = false,
+   Flag = "Toggle1", 
+   Callback = function(Value)
+       ESP.Enabled = Value
+       
+       if Value then
+           -- สร้าง ESP ให้ผู้เล่นที่มีอยู่
+           for _, p in ipairs(Players:GetPlayers()) do
+               if p ~= localPlayer then
+                   createESP(p)
+               end
+           end
+           
+           -- ผู้เล่นใหม่เข้ามา
+           ESP.Connections = ESP.Connections or {}
+           ESP.Connections.PlayerAdded = Players.PlayerAdded:Connect(function(player)
+               player.CharacterAdded:Connect(function()
+                   if ESP.Enabled then
+                       task.wait(0.5)
+                       createESP(player)
+                   end
+               end)
+               if player.Character and ESP.Enabled then
+                   createESP(player)
+               end
+           end)
+           
+           -- ผู้เล่นออก
+           ESP.Connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(player)
+               removeESP(player)
+           end)
+       else
+           -- ปิด ESP ทั้งหมด
+           for p in pairs(ESP.Objects) do
+               removeESP(p)
+           end
+           ESP.Objects = {}
+           
+           -- ตัดการเชื่อมต่อ
+           if ESP.Connections then
+               for _, c in pairs(ESP.Connections) do
+                   if c then c:Disconnect() end
+               end
+               ESP.Connections = nil
+           end
+       end
+   end,
+})
+
+-- ⚙️ ตั้งค่าเพิ่มเติม (ถ้าต้องการ)
+local Section = Tab:CreateSection("ตั้งค่า ESP")
+
+local DistanceSlider = Tab:CreateSlider({
+   Name = "ระยะสูงสุด",
+   Range = {100, 5000},
+   Increment = 100,
+   Suffix = " m",
+   CurrentValue = ESP.MaxDistance,
+   Flag = "ESPMaxDist",
+   Callback = function(Value)
+       ESP.MaxDistance = Value
+   end,
+})
+
+local ColorBox = Tab:CreateColorPicker({
+   Name = "สีกรอบ",
+   Color = ESP.Colors.Box,
+   Flag = "ESPBoxColor",
+   Callback = function(Value)
+       ESP.Colors.Box = Value
+   end,
+})
+
+local ColorName = Tab:CreateColorPicker({
+   Name = "สีชื่อ",
+   Color = ESP.Colors.Name,
+   Flag = "ESPNameColor",
+   Callback = function(Value)
+       ESP.Colors.Name = Value
+   end,
+})
+
+
+
+
+local Tab = Window:CreateTab("Tab Example", 4483362458)
+
+
+
+
+
+
+
+
+Rayfield:LoadConfiguration()
