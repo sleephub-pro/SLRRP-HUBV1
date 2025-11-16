@@ -1,0 +1,20 @@
+local Kayak and Surf = game.PlaceId == 136404558442020
+
+
+repeat wait() until game:IsLoaded()
+
+
+if Kayak and Surf then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Kayak%20and%20Surf"))()
+    print("Loaded: +1 Brainrot Per Click Script")
+
+else
+
+    game.Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
+    wait(3)
+    game:Shutdown()
+    wait(3)
+    if game then
+        while true do end
+    end
+end
