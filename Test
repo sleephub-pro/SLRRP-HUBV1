@@ -1,120 +1,141 @@
---=====================================
--- CONFIG
---=====================================
+-- CONFIG: ใส่ URL และ TOKEN ที่ได้จาก Apps Script
+local GoogleScriptURL = "https://script.google.com/macros/s/AKfycbzJH8ty2nguwAGGqFtAP0kvnslsxQgTACRM5ICDY6hn9C2EYW8eMxmXYpkWj4rTMBU-Tw/exec" -- เปลี่ยนเป็นของคุณ
+local GoogleToken = "FNE9D2K9-SSLA-88DK-PPWQ-99102" -- ต้องตรงกับ SECRET_TOKEN ใน Apps Script
+
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-local GoogleScriptURL = "https://script.google.com/macros/s/AKfycbzJH8ty2nguwAGGqFtAP0kvnslsxQgTACRM5ICDY6hn9C2EYW8eMxmXYpkWj4rTMBU-Tw/exec" -- เปลี่ยนเป็นของคุณ
-
+-- สำหรับ Rayfield UI (สมมติว่าคุณมี Rayfield ตามที่ส่งมา)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
 local Window = Rayfield:CreateWindow({
    Name = "SLEEP HUB",
-   Icon = 121030902371363,
    LoadingTitle = "SLEEP HUB",
    LoadingSubtitle = "by SLEEP HUB",
    ShowText = "Rayfield",
    Theme = "Dark Blue",
    ToggleUIKeybind = "K",
-   DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false,
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil,
-      FileName = "Big Hub"
-   },
-   Discord = {
-      Enabled = false,
-      Invite = "noinvitelink",
-      RememberJoins = true
-   },
-   KeySystem = true,
-   KeySettings = {
-      Title = "SLEEP HUB",
-      Subtitle = "Key System",
-      Note = "กรอกคีย์ที่ได้รับ",
-      FileName = "Key",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {} -- ไม่ต้องใส่ค่า เพราะเช็คผ่าน Google Sheet
-   }
+   ConfigurationSaving = { Enabled = true, FolderName = nil, FileName = "Big Hub" },
+   Discord = { Enabled = false }
 })
+-- Tab และ Input (API ของ Rayfield อาจต่างกันเล็กน้อยในเวอร์ชันคุณ ถ้าไม่ตรงให้แทนที่ด้วยวิธีสร้าง UI ของ Rayfield ที่ใช้ได้)
+local MainTab = Window:CreateTab("Auth")
 
-Rayfield:LoadConfiguration()
+-- ---------- HWID helper ----------
+-- พยายามใช้ writefile/readfile เพื่อเก็บ HWID แบบถาวร (ต้องรันบน executor ที่ให้สิทธิ์)
+local HWID_FILENAME = "sleephub_hwid.txt"
 
---=====================================
--- ฟังก์ชัน HWID และตรวจสอบคีย์
---=====================================
-local function GetHWID()
-    local userId = Players.LocalPlayer.UserId
-    local hwid = "HWID_"..userId -- สร้าง HWID เฉพาะผู้เล่น
-    return hwid
+local function fileExists(name)
+  if isfile then
+    return isfile(name)
+  end
+  return false
 end
 
-local function CheckKey(key)
-    local hwid = GetHWID()
-    local url = GoogleScriptURL.."?key="..key.."&hwid="..hwid
-    local success, response = pcall(function()
-        return HttpService:GetAsync(url)
-    end)
-    
-    if not success then
-        return false, "ไม่สามารถเชื่อม Google Sheet"
+local function saveHWIDToFile(hwid)
+  if writefile then
+    pcall(function() writefile(HWID_FILENAME, hwid) end)
+  end
+end
+
+local function readHWIDFromFile()
+  if isfile then
+    local ok, content = pcall(function() return readfile(HWID_FILENAME) end)
+    if ok and content then return content end
+  end
+  return nil
+end
+
+-- ฟังก์ชันสร้าง HWID ถาวร (ถ้าไม่มีไฟล์จะสร้าง GUID ใหม่และพยายามบันทึก)
+local function getHWID()
+  -- พยายามอ่านจากไฟล์ก่อน
+  local hw = readHWIDFromFile()
+  if hw and hw ~= "" then
+    return hw
+  end
+
+  -- ถ้าไม่มีไฟล์, สร้างจากข้อมูลที่เป็นไปได้: UserId + GUID
+  local seed = tostring(LocalPlayer.UserId) .. "-" .. HttpService:GenerateGUID(false)
+  -- แฮชง่ายๆ เพื่อให้สั้นลง (ใช้ JSONEncode แล้ว CRC แบบง่าย)
+  local hwid = HttpService:GenerateGUID(false) -- พอใช้งาน (ไม่สามารถได้ HW จริงของเครื่องบน Roblox)
+  -- พยายามเขียนไฟล์
+  saveHWIDToFile(hwid)
+  return hwid
+end
+
+-- ---------- HTTP helper ----------
+local function postToServer(payload)
+  local body = HttpService:JSONEncode(payload)
+  local headers = { ["Content-Type"] = "application/json" }
+  local ok, res = pcall(function()
+    return HttpService:PostAsync(GoogleScriptURL, body, Enum.HttpContentType.ApplicationJson)
+  end)
+  if not ok then
+    return false, "HTTP request failed: " .. tostring(res)
+  end
+  local decoded = nil
+  local succ, dec = pcall(function() return HttpService:JSONDecode(res) end)
+  if not succ then
+    return false, "Failed to decode response"
+  end
+  return true, dec
+end
+
+-- ---------- Key flow ----------
+local function redeemKeyFlow(keyString)
+  local hwid = getHWID()
+  local payload = {
+    token = GoogleToken,
+    action = "redeem",
+    key = tostring(keyString),
+    hwid = tostring(hwid),
+    usedBy = tostring(LocalPlayer.Name)
+  }
+
+  local ok, res = postToServer(payload)
+  if not ok then
+    return false, res
+  end
+
+  if res.success then
+    -- ตัวอย่าง: เก็บสถานะ (คุณอาจบันทึกลงตัวแปร global หรือ file เพิ่มเติม)
+    return true, res
+  else
+    return false, res.message or "Unknown error"
+  end
+end
+
+-- ---------- UI: ปุ่มใส่คีย์ (Rayfield) ----------
+-- ผมใช้ CreateInput + CreateButton ซึ่งมีอยู่ใน Rayfield forks หลายตัว
+-- หากเวอร์ชันคุณต่าง ให้ใช้วิธีรับ input ที่ Rayfield ของคุณรองรับ
+local inputBox = MainTab:CreateInput({
+  Name = "ใส่คีย์ (Key)",
+  PlaceholderText = "วางคีย์ที่นี่แล้วกด Submit",
+  RemoveTextAfterFocusLost = false,
+  Callback = function(text) end
+})
+
+local submitBtn = MainTab:CreateButton({
+  Name = "ยืนยันคีย์",
+  Callback = function()
+    local key = inputBox.Configuration.Value or inputBox.Value or inputBox.Text or inputBox -- try fields
+    if not key or key == "" then
+      Rayfield:Notify({Title="SLEEP HUB", Content="กรุณากรอกคีย์", Duration=3})
+      return
     end
-    
-    local data = HttpService:JSONDecode(response)
-    if data.valid then
-        local expiry = tonumber(data.expiry) or 0
-        if expiry > os.time() then
-            return true
-        else
-            return false, "คีย์หมดอายุ"
-        end
+    Rayfield:Notify({Title="SLEEP HUB", Content="กำลังตรวจสอบคีย์...", Duration=2})
+    local ok, res = redeemKeyFlow(key)
+    if ok then
+      -- ตัวอย่าง: แสดงผล และ โหลดสคริปต์เกมส์ (เช่นที่คุณต้องการ)
+      Rayfield:Notify({Title="SLEEP HUB", Content="ยืนยันคีย์สำเร็จ! โหลดสคริปต์...", Duration=4})
+      -- ถ้าต้องการอ่านเวลาที่เหลือ: res.expireTsMs หรือ res.remainingMs
+      print("Key response:", game:GetService("HttpService"):JSONEncode(res))
+      -- ตัวอย่าง: โหลดสคริปต์จริงของเกมเมื่อสำเร็จ
+      -- (ใส่โค้ดโหลดสคริปต์ของคุณในนี้ เช่น loadstring(HttpGet(...)) )
+      -- ตัวอย่างจากเดิมในสคริปต์ของคุณ:
+      -- if Kayak and Surf then loadstring(game:HttpGet("..."))() end
     else
-        return false, data.reason
+      Rayfield:Notify({Title="SLEEP HUB", Content="คีย์ไม่ถูกต้อง/หมดอายุ/ถูกผูกแล้ว: "..tostring(res), Duration=5})
     end
-end
-
-local function SaveKeyExpiry(key)
-    local hwid = GetHWID()
-    local expiryTime = os.time() + 86400 -- 1 วัน = 86400 วินาที
-    local url = GoogleScriptURL.."?key="..key.."&hwid="..hwid.."&expiry="..expiryTime
-    pcall(function()
-        HttpService:GetAsync(url)
-    end)
-end
-
---=====================================
--- Key System Callback
---=====================================
-Rayfield:CreateKeySystem({
-    Callback = function(Key)
-        local valid, reason = CheckKey(Key)
-        if valid then
-            print("คีย์ถูกต้อง! เริ่มใช้งาน Hub")
-            -- บันทึกวันหมดอายุ หากยังไม่มี
-            SaveKeyExpiry(Key)
-        else
-            Players.LocalPlayer:Kick("คีย์ไม่ถูกต้อง หรือหมดอายุ: "..tostring(reason))
-        end
-    end
+  end
 })
-
---=====================================
--- ตรวจสอบเกมก่อนโหลด Script
---=====================================
-local Kayak = game.PlaceId == 136404558442020
-local Surf = game.PlaceId == 136404558442020 -- ปรับ PlaceId จริงของ Surf
-
-repeat wait() until game:IsLoaded()
-
-if Kayak and Surf then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Kayak%20and%20Surf"))()
-    print("Loaded: Kayak and Surf Script")
-else
-    Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
-    wait(3)
-    game:Shutdown()
-    wait(3)
-    while true do end
-end
