@@ -1,75 +1,120 @@
---=====================================
---  CONFIG  (ปรับตามที่ตั้งไว้ใน Apps-Script)
---=====================================
+--=============================================================
+--  CONFIG (ตั้งเองใน Apps Script)
+--=============================================================
 local GoogleScriptURL = "https://script.google.com/macros/s/AKfycbwev0J0v6CTL4r2Lkl9wQ4IIcxFv3zabHXBsT5a5qB8AtrQ_BTPe0vzdlH_2kzqxznSEA/exec"
-local GoogleToken     = "SLEEHUBPRO"   -- ตรงกับ TOKEN ใน Apps-Script
+local TOKEN = "SLEEPHUB-KEY-SECRET-928371"
 
--- ถ้าไม่อยากใช้ KeySystem ให้ตั้ง false
-local UseKeySystem    = true
-
---=====================================
---  ฟังก์ชันช่วย
---=====================================
 local HttpService = game:GetService("HttpService")
-local Players     = game:GetService("Players")
+local Player = game.Players.LocalPlayer
 
--- อ่าน HWID ง่ายๆ (ใช้ UserId + ชื่อเครื่อง)
-local function GetHWID()
-    local id = tostring(Players.LocalPlayer.UserId)
-    local name = tostring(game:GetService("RunService"):IsStudio() and "Studio" or
-                          (pcall(function() return game:GetService("RbxAnalyticsService"):GetClientId() end)) and
-                          game:GetService("RbxAnalyticsService"):GetClientId() or "NoClientId")
-    return HttpService:JSONEncode({id,name}) -- แปลงเป็น string ยาวๆ
-end
+-- HWID ป้องกันสปูฟระดับพื้นฐาน
+local HWID = game:GetService("RbxAnalyticsService"):GetClientId() .. "_" .. Player.UserId
 
--- ถาม key จากผู้ใช้ (ใช้ Rayfield หรือ Input ธรรมดาก็ได้)
-local function PromptKey()
-    local key = nil
-    -- ใครใช้ Rayfield อยู่แล้วแทนตรงนี้ได้เลย
-    key = _G.KeyInput or nil
-    while not key or key=="" do
-        key = Players.LocalPlayer:RequestString("Key Required","Please enter your key:","") or ""
-        wait()
+
+
+--=============================================================
+--  ฟังก์ชันตรวจสอบคีย์ผ่าน Google Sheet
+--=============================================================
+local function CheckKey(USER_KEY)
+    local Data = {
+        key = USER_KEY,
+        hwid = HWID,
+        username = Player.Name,
+        token = TOKEN
+    }
+
+    local Body = HttpService:JSONEncode(Data)
+
+    local request = syn and syn.request or http_request or request or (http and http.request)
+
+    if not request then
+        return false, "⚠ ไม่รองรับ Executor นี้"
     end
-    return key
+
+    local Response = request({
+        Url = GoogleScriptURL,
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = Body
+    })
+
+    if not Response then
+        return false, "❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้"
+    end
+
+    local Result = HttpService:JSONDecode(Response.Body)
+    return Result.status, Result.message
 end
 
--- ตรวจสอบกับ Google-Sheet
-local function CheckKeyOnline(key,hwid)
-    local url = GoogleScriptURL.. "?action=check&token="..GoogleToken..
-                "&key="..HttpService:UrlEncode(key).."&hwid="..HttpService:UrlEncode(hwid)
-    local suc,res = pcall(function() return HttpService:GetAsync(url) end)
-    if not suc then return 'error' end
-    return res   -- ค่าที่ส่งกลับ: passed / invalid_key / hwid_mismatch / invalid_token
-end
 
---=====================================
---  เริ่มทำงาน
---=====================================
-repeat wait() until game:IsLoaded()
+
+--=============================================================
+--  โหลด Rayfield
+--=============================================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "SLEEP HUB",
+   Icon = 121030902371363,
+   LoadingTitle = "SLEEP HUB",
+   LoadingSubtitle = "by SLEEP HUB",
+   Theme = "Dark Blue",
+   ToggleUIKeybind = "K",
+
+   KeySystem = true,
+   KeySettings = {
+      Title = "SLEEP HUB | Key System",
+      Subtitle = "ระบบตรวจสอบคีย์ Google Sheet",
+      Note = "ใส่คีย์ที่ได้รับจากระบบ",
+      SaveKey = false,
+      GrabKeyFromSite = false,
+      Key = {"SLEEP_HUB_PLACEHOLDER"} -- ไม่ใช่คีย์จริง
+   }
+})
+
+Rayfield:LoadConfiguration()
+
+
+
+--=============================================================
+--  Prompt ให้กรอกคีย์ + ตรวจสอบคีย์จริง
+--=============================================================
+Rayfield:Prompt({
+    Title = "ระบบตรวจสอบคีย์",
+    Subtitle = "กรอกคีย์ของคุณ",
+    Input = {
+        Placeholder = "ใส่คีย์...",
+        Type = "Default"
+    },
+
+    Callback = function(UserKey)
+        local status, msg = CheckKey(UserKey)
+
+        if status == "success" then
+            Rayfield:Notify("สำเร็จ", msg, 5)
+            getgenv().SLEEP_KEY = UserKey
+        else
+            Rayfield:Notify("ล้มเหลว", msg, 5)
+            task.wait(2)
+            Player:Kick(msg)
+        end
+    end
+})
+
+
+
+--=============================================================
+--  โหลด Script เฉพาะเกม Kayak and Surf
+--=============================================================
+repeat task.wait() until game:IsLoaded()
 
 local KayakAndSurf = game.PlaceId == 136404558442020
-if not KayakAndSurf then
-    Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
-    wait(3)
+
+if KayakAndSurf then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Kayak%20and%20Surf"))()
+    print("[SLEEP HUB] Loaded: Kayak and Surf Script")
+else
+    Player:Kick("ไม่รองรับเกมนี้")
+    task.wait(2)
     game:Shutdown()
-    while true do end
 end
-
--- ขั้นตอน KeySystem
-if UseKeySystem then
-    local hwid = GetHWID()
-    local key  = PromptKey()
-    local resp = CheckKeyOnline(key,hwid)
-    if resp ~= 'passed' then
-        Players.LocalPlayer:Kick("Key ไม่ถูกต้อง หรือ HWID ไม่ตรง ("..resp..")")
-        wait(3)
-        game:Shutdown()
-        while true do end
-    end
-    print("Key & HWID ผ่าน!")
-end
-
--- โหลดสคริปต์หลัก
-loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Kayak%20and%20Surf"))()
-print("Loaded: Kayak and Surf Script")
