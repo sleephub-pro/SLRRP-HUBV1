@@ -25,7 +25,7 @@ local function CheckKey(USER_KEY)
 
     local Body = HttpService:JSONEncode(Data)
 
-    local request = syn and syn.request or http_request or request or (http and http.request)
+    local request = request or http_request or syn and syn.request or http and http.request
 
     if not request then
         return false, "⚠ ไม่รองรับ Executor นี้"
