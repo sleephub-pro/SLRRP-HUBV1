@@ -19,7 +19,7 @@ elseif isChickenCannonSim then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Chicken%20Cannon%20Simulator"))()
     print("Loaded: Chicken Cannon Simulator Script")
 
-elseif isChickenCannonSim then
+elseif isBreakaFriend then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Break%20a%20Friend"))()
     print("Loaded: Break a Friend Script")
 
