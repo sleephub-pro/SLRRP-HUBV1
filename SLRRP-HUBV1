@@ -2,32 +2,40 @@ repeat task.wait() until game:IsLoaded()
 
 local placeId = game.PlaceId
 
-local isKayakAndSurf         = placeId == 136404558442020
-local isArcadeSlamSimulator  = placeId == 134457821643846
-local isChickenCannonSim     = placeId == 103007810968052
-local isBreakaFriend     = placeId == 126881587516442
-local isBuildYouTubeEmpire!     = placeId == 120564326011184
+local supported = {
+    [136404558442020] = { -- Kayak & Surf
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/main/Kayak%20and%20Surf",
+        name = "Kayak and Surf"
+    },
+    [134457821643846] = { -- Arcade Slam Simulator
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Arcade%20Slam%20Simulator",
+        name = "Arcade Slam Simulator"
+    },
+    [103007810968052] = { -- Chicken Cannon Simulator
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Chicken%20Cannon%20Simulator",
+        name = "Chicken Cannon Simulator"
+    },
+    [126881587516442] = { -- Break a Friend
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Break%20a%20Friend",
+        name = "Break a Friend"
+    },
+    [120564326011184] = { -- Build a YouTube Empire!
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/main/Build%20a%20YouTube%20Empire",
+        name = "Build a YouTube Empire!"
+    }
+}
 
-if isKayakAndSurf then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Kayak%20and%20Surf"))()
-    print("Loaded: Kayak and Surf Script")
-
-elseif isArcadeSlamSimulator then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Arcade%20Slam%20Simulator"))()
-    print("Loaded: Arcade Slam Simulator Script")
-
-elseif isChickenCannonSim then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Chicken%20Cannon%20Simulator"))()
-    print("Loaded: Chicken Cannon Simulator Script")
-
-elseif isBuildYouTubeEmpire! then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!"))()
-    print("Loaded: Build YouTube Empire! Script")
-
-elseif isBreakaFriend then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Break%20a%20Friend"))()
-    print("Loaded: Break a Friend Script")
-
+local data = supported[placeId]
+if data then
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(data.url))()
+    end)
+    if success then
+        print("Loaded: " .. data.name)
+    else
+        warn("Script load failed for " .. data.name .. " → " .. tostring(err))
+        game.Players.LocalPlayer:Kick("ดาวน์โหลดสคริปต์ไม่สำเร็จ")
+    end
 else
     game.Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
     task.wait(3)
