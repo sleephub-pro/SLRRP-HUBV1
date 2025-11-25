@@ -6,6 +6,7 @@ local isKayakAndSurf         = placeId == 136404558442020
 local isArcadeSlamSimulator  = placeId == 134457821643846
 local isChickenCannonSim     = placeId == 103007810968052
 local isBreakaFriend     = placeId == 126881587516442
+local isBuildYouTubeEmpire!     = placeId == 120564326011184
 
 if isKayakAndSurf then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Kayak%20and%20Surf"))()
@@ -18,6 +19,10 @@ elseif isArcadeSlamSimulator then
 elseif isChickenCannonSim then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Chicken%20Cannon%20Simulator"))()
     print("Loaded: Chicken Cannon Simulator Script")
+
+elseif isChickenCannonSim then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!"))()
+    print("Loaded: Build YouTube Empire! Script")
 
 elseif isBreakaFriend then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Break%20a%20Friend"))()
