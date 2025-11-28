@@ -21,7 +21,11 @@ local supported = {
     },
     [75985597910430] = { -- +1 Speed School Escape.lua
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%2B1%20Speed%20School%20Escape.lua",
-        name = "Break a Friend"
+        name = "+1 Speed School Escape.lua"
+    },
+    [85050171250159] = { -- Poop a Big Poop
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Poop%20a%20Big%20Poop.lua",
+        name = "Poop a Big Poop"
     },
     [120564326011184] = { -- Build a YouTube Empire!
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
