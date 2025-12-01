@@ -27,6 +27,10 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Poop%20a%20Big%20Poop.lua",
         name = "Poop a Big Poop"
     },
+    [101953168527257] = { -- Spear Fishing
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20Fishing",
+        name = "Spear Fishing"
+    },
     [120564326011184] = { -- Build a YouTube Empire!
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
         name = "Build a YouTube Empire!"
