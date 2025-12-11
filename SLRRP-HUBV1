@@ -31,6 +31,12 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20Fishing",
         name = "Spear Fishing"
     },
+    [86260905411899] = { -- 
+[⭐️UPD4]Train to Escape Prison
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%5B⭐%EF%B8%8FUPD4%5DTrain%20to%20Escape%20Prison",
+        name = "
+[⭐️UPD4]Train to Escape Prisong"
+    },
     [120564326011184] = { -- Build a YouTube Empire!
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
         name = "Build a YouTube Empire!"
