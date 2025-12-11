@@ -82,47 +82,45 @@ local Tab = Window:Tab({
 
 
 
+local fishingActive = false
+local fishingThread = nil
+
 local Toggle = Tab:Toggle({
-    Title = "Auto Fish",
-    Desc = "รันอัตโนมัติเมื่อเปิดใช้งาน",
+    Title = "Auto Fishing",
+    Desc = "ทำงานอัตโนมัติเมื่อเปิด",
     Icon = "bird",
     Type = "Checkbox",
     Value = false,
     Callback = function(state) 
-        -- สถานะการทำงาน
-        _G.autoFishEnabled = state
+        fishingActive = state
         
         if state then
-            -- เริ่ม loop เมื่อเปิด
-            autoFishLoop()
+            -- เริ่มลูป
+            fishingThread = task.spawn(function()
+                while fishingActive do
+                    -- เรียกใช้ฟังก์ชันต่างๆ
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/ChargeFishingRod"):InvokeServer()
+                    
+                    local args = {
+                        -0.5718746185302734,
+                        1,
+                        1765483909.133214
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/RequestFishingMinigameStarted"):InvokeServer(unpack(args))
+                    
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RE/FishingCompleted"):FireServer()
+                    
+                    -- รอ 0.001 วินาที (แต่จริงๆ จะนานกว่านั้น)
+                    task.wait(0.001)
+                end
+            end)
+        else
+            -- หยุดลูป
+            if fishingThread then
+                fishingActive = false
+                task.wait(0.1) -- รอให้ลูปสิ้นสุด
+                fishingThread = nil
+            end
         end
     end
 })
-
--- ฟังก์ชันหลักสำหรับ fishing
-function autoFishLoop()
-    spawn(function()
-        while _G.autoFishEnabled do
-            -- ป้องกัน error ทำให้ script หยุดทำงาน
-            pcall(function()
-                -- Charge Fishing Rod
-                game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/ChargeFishingRod"):InvokeServer()
-                
-                -- Request Fishing Minigame
-                local args = {
-                    -0.5718746185302734,
-                    1,
-                    1765483909.133214
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/RequestFishingMinigameStarted"):InvokeServer(unpack(args))
-                
-                -- Complete Fishing
-                game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RE/FishingCompleted"):FireServer()
-            end)
-            
-            -- หน่วงเวลาระหว่างแต่ละรอบ (ปรับค่าได้)
-            -- 0.1 = 0.1 วินาที, ถ้าอยากให้เร็วสุดใส่ wait() ว่างๆ
-            wait(0.1)
-        end
-    end)
-end
