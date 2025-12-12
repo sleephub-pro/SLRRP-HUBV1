@@ -1,84 +1,188 @@
--- ที่ส่วน KeySystem ของ WindUI:
-local HttpService = game:GetService("HttpService")
-local API_URL = "https://your-server.example.com/validate" -- เปลี่ยนเป็น URL จริง
-local WRITEFILE_NAME = "ftgshub_key.txt" -- ใช้กับ exploit ที่มี writefile/readfile
+repeat task.wait() until game:IsLoaded()
 
-local function trySaveKeyLocal(key)
-    pcall(function()
-        if writefile then
-            writefile(WRITEFILE_NAME, key)
-        end
+local placeId = game.PlaceId
+
+local supported = {
+    [136404558442020] = { -- Kayak & Surf
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/main/Kayak%20and%20Surf",
+        name = "Kayak and Surf"
+    },
+    [134457821643846] = { -- Arcade Slam Simulator
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Arcade%20Slam%20Simulator",
+        name = "Arcade Slam Simulator"
+    },
+    [103007810968052] = { -- Chicken Cannon Simulator
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Chicken%20Cannon%20Simulator",
+        name = "Chicken Cannon Simulator"
+    },
+    [126881587516442] = { -- Break a Friend
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Break%20a%20Friend",
+        name = "Break a Friend"
+    },
+    [75985597910430] = { -- +1 Speed School Escape.lua
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%2B1%20Speed%20School%20Escape.lua",
+        name = "+1 Speed School Escape.lua"
+    },
+    [85050171250159] = { -- Poop a Big Poop
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Poop%20a%20Big%20Poop.lua",
+        name = "Poop a Big Poop"
+    },
+    [86260905411899] = { -- Train to Escape Prison
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%5B⭐%EF%B8%8FUPD4%5DTrain%20to%20Escape%20Prison",
+        name = "Train to Escape Prisong"
+    },
+    [120564326011184] = { -- Build a YouTube Empire!
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
+        name = "Build a YouTube Empire!"
+    }
+}
+
+local data = supported[placeId]
+if data then
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(data.url))()
     end)
+    if success then
+        print("Loaded: " .. data.name)
+    else
+        warn("Script load failed for " .. data.name .. " → " .. tostring(err))
+        game.Players.LocalPlayer:Kick("ดาวน์โหลดสคริปต์ไม่สำเร็จ")
+    end
+else
+    game.Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
+    task.wait(3)
+    game:Shutdown()
 end
 
-local function tryReadLocalKey()
-    local ok, content = pcall(function()
-        if isfile and isfile(WRITEFILE_NAME) then
-            return readfile(WRITEFILE_NAME)
+
+-- ตัวอย่าง KeyValidator ที่ติดต่อ API ภายนอก
+local HttpService = game:GetService("HttpService")
+
+local BASE_URL = "https://yourdomain.example" -- <-- แก้ให้ตรงกับ BASE_URL ของคุณ (รวม https://)
+local VALIDATE_ENDPOINT = BASE_URL .. "/api/validate"
+local ACTIVATE_ENDPOINT = BASE_URL .. "/api/activate"
+
+-- ฟังก์ชันช่วย: ดึง HWID จาก executor (หลาย executor มี API ต่างกัน)
+local function getHWID()
+    -- ตัวอย่าง common exploit APIs
+    if syn and syn.get_hwid then
+        pcall(function() end)
+        return syn.get_hwid()
+    end
+    if (identifyexecutor) then
+        -- identifyexecutor ไม่ได้คืน HWID แต่คืนชื่อ executor; ใช้เป็น fallback
+        local ok, ex = pcall(identifyexecutor)
+        if ok and ex then return "EXEC_"..tostring(ex) end
+    end
+    if getexecutorname then
+        local ok, ex = pcall(getexecutorname)
+        if ok and ex then return "EXEC_"..tostring(ex) end
+    end
+    -- default
+    return "UNKNOWN_HWID"
+end
+
+-- ฟังก์ชันเก็บ/อ่านคีย์แบบ local (ถ้า executor มี writefile/readfile)
+local KEY_FILE = "ftgshub_key.txt"
+local function saveKeyLocal(key)
+    if writefile then
+        local ok, err = pcall(function() writefile(KEY_FILE, key) end)
+        return ok
+    end
+    return false
+end
+local function loadKeyLocal()
+    if isfile then
+        local ok, exists = pcall(function() return isfile(KEY_FILE) end)
+        if ok and exists and readfile then
+            local ok2, content = pcall(function() return readfile(KEY_FILE) end)
+            if ok2 then return content end
         end
-        return nil
-    end)
-    if ok then return content end
+    end
     return nil
 end
 
--- พยายามตรวจหา HWID ของ executor (ตัวอย่าง: syn)
-local function getHWID()
-    local ok, hw = pcall(function()
-        if syn and syn.get_guid then
-            return syn.get_guid()
-        elseif identifyexecutor then
-            return identifyexecutor()
-        end
-        -- ไม่มีก็ส่ง placeholder (แนะนำให้ดัดแปลงตาม executor)
-        return "unknown_hwid"
-    end)
-    if ok then return hw end
-    return "unknown_hwid"
-end
+-- main validator function used by WindUI
+local function KeyValidator(EnteredKey)
+    local hwid = getHWID()
+    local keyToUse = EnteredKey
 
-local function validateKeyRemote(key)
-    local hw = getHWID()
-    local url = API_URL .. "?key=" .. HttpService:UrlEncode(key) .. "&hwid=" .. HttpService:UrlEncode(hw)
+    -- if user didn't input key but we have local stored key, try that
+    if (not EnteredKey or EnteredKey == "") then
+        local stored = loadKeyLocal()
+        if stored and stored ~= "" then
+            keyToUse = stored
+        else
+            -- no key at all
+            return false
+        end
+    end
+
+    -- validate (GET)
     local ok, resp = pcall(function()
-        return HttpService:GetAsync(url)
+        local url = VALIDATE_ENDPOINT .. "?key=" .. HttpService:UrlEncode(keyToUse) .. "&hwid=" .. HttpService:UrlEncode(hwid)
+        return HttpService:GetAsync(url, true)
     end)
     if not ok then
-        return false, "ไม่สามารถติดต่อ server"
-    end
-    local parsed = nil
-    local success, err = pcall(function() parsed = HttpService:JSONDecode(resp) end)
-    if not success then
-        return false, "response จาก server ไม่ถูกต้อง"
-    end
-    if parsed.success and parsed.valid then
-        -- บันทึกคีย์ไว้เครื่อง (เพื่อไม่ต้องใส่ใหม่)
-        trySaveKeyLocal(key)
-        return true, "Key valid"
-    else
-        return false, parsed.message or "invalid"
-    end
-end
-
--- ตัวอย่าง KeyValidator สำหรับ WindUI
-KeyValidator = function(EnteredKey)
-    -- ถ้ามีค่าเก็บในเครื่อง ให้เช็กก่อน
-    local localKey = tryReadLocalKey()
-    if localKey and localKey == EnteredKey then
-        -- อาจยังอยากเช็ก remote ว่าไม่หมดอายุ -> แต่เพื่อประสิทธิภาพ เราตรวจ remote คร่าวๆ
-        local ok, msg = validateKeyRemote(EnteredKey)
-        if ok then return true end
-        -- หาก remote บอกหมดอายุให้ return false
+        -- network error
+        warn("Key validation http error: " .. tostring(resp))
         return false
     end
 
-    -- ถ้าหากยังไม่มี ให้เรียก validate remote
-    local ok, msg = validateKeyRemote(EnteredKey)
-    if ok then
-        -- ผ่าน -> เก็บ
-        return true
-    else
-        -- ไม่ผ่าน
+    local data = nil
+    local ok2, parsed = pcall(function() return HttpService:JSONDecode(resp) end)
+    if not ok2 then
+        warn("Invalid JSON from validation endpoint")
         return false
     end
+    data = parsed
+
+    if not data.ok then
+        -- ถ้า validate failed ลอง activate (post) ที่ endpoint เพื่อผูก hwid ถ้าจำเป็น
+        -- แต่ถ้า error เป็น expired/invalid หยุดเลย
+        if data.error == "hwid_required" or data.error == "invalid_key" or data.error == "expired" or data.error == "hwid_mismatch" then
+            -- ล้มเหลว
+            return false
+        else
+            return false
+        end
+    end
+
+    -- ถ้าที่นี่ key valid -> ทำ activate (บันทึกการใช้งาน/binding ถ้ายังไม่ได้ bind)
+    local activateBody = {
+        key = keyToUse,
+        hwid = hwid,
+        username = tostring(game.Players.LocalPlayer and game.Players.LocalPlayer.Name or "unknown")
+    }
+
+    local ok3, resp2 = pcall(function()
+        return HttpService:PostAsync(ACTIVATE_ENDPOINT, HttpService:JSONEncode(activateBody), Enum.HttpContentType.ApplicationJson, false)
+    end)
+    if not ok3 then
+        warn("Activate http error: " .. tostring(resp2))
+        -- หาก activate ล้มเหลว อาจจะยังยอมให้ผ่านเพราะ validate ผ่าน แต่แนะนำให้ไม่ผ่าน
+        return false
+    end
+
+    local ok4, parsed2 = pcall(function() return HttpService:JSONDecode(resp2) end)
+    if not ok4 then
+        warn("Invalid JSON from activate endpoint")
+        return false
+    end
+
+    if not parsed2.ok then
+        warn("Activate failed: "..tostring(parsed2.error))
+        return false
+    end
+
+    -- ถ้าทำงานถึงที่นี่ถือว่า key ผ่านการ activate/validate -> เก็บในเครื่องถ้าได้
+    pcall(function() saveKeyLocal(keyToUse) end)
+
+    -- คุณอาจจะเก็บข้อมูลวันหมดอายุ parsed2.expires_at (timestamp ms)
+    -- เพื่อแสดงให้ผู้ใช้ทราบใน UI
+
+    return true
 end
+
+-- ส่งกลับฟังก์ชันเพื่อใช้ใน WindUI
+return KeyValidator
