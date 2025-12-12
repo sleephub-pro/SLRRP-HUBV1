@@ -1,141 +1,220 @@
--- CONFIG: ใส่ URL และ TOKEN ที่ได้จาก Apps Script
-local GoogleScriptURL = "https://script.google.com/macros/s/AKfycbzJH8ty2nguwAGGqFtAP0kvnslsxQgTACRM5ICDY6hn9C2EYW8eMxmXYpkWj4rTMBU-Tw/exec" -- เปลี่ยนเป็นของคุณ
-local GoogleToken = "FNE9D2K9-SSLA-88DK-PPWQ-99102" -- ต้องตรงกับ SECRET_TOKEN ใน Apps Script
+-- ใส่ไว้ที่ด้านบนของสคริปต์เดิม
+local KeySystem = {
+    ApiUrl = "http://your-server-ip:5000", -- เปลี่ยนเป็น IP/Domain ของเซิร์ฟเวอร์
+    ApiKey = "your_secret_api_key_here", -- API_SECRET_KEY จาก .env
+    SaveFile = "sleep_hub_key.json"
+}
 
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- สำหรับ Rayfield UI (สมมติว่าคุณมี Rayfield ตามที่ส่งมา)
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = Rayfield:CreateWindow({
-   Name = "SLEEP HUB",
-   LoadingTitle = "SLEEP HUB",
-   LoadingSubtitle = "by SLEEP HUB",
-   ShowText = "Rayfield",
-   Theme = "Dark Blue",
-   ToggleUIKeybind = "K",
-   ConfigurationSaving = { Enabled = true, FolderName = nil, FileName = "Big Hub" },
-   Discord = { Enabled = false }
-})
--- Tab และ Input (API ของ Rayfield อาจต่างกันเล็กน้อยในเวอร์ชันคุณ ถ้าไม่ตรงให้แทนที่ด้วยวิธีสร้าง UI ของ Rayfield ที่ใช้ได้)
-local MainTab = Window:CreateTab("Auth")
-
--- ---------- HWID helper ----------
--- พยายามใช้ writefile/readfile เพื่อเก็บ HWID แบบถาวร (ต้องรันบน executor ที่ให้สิทธิ์)
-local HWID_FILENAME = "sleephub_hwid.txt"
-
-local function fileExists(name)
-  if isfile then
-    return isfile(name)
-  end
-  return false
+-- ฟังก์ชันสร้าง HWID
+local function GetHWID()
+    local success, hwid = pcall(function()
+        return game:GetService("RbxAnalyticsService"):GetClientId()
+    end)
+    return success and hwid or tostring(game.Players.LocalPlayer.UserId)
 end
 
-local function saveHWIDToFile(hwid)
-  if writefile then
-    pcall(function() writefile(HWID_FILENAME, hwid) end)
-  end
-end
-
-local function readHWIDFromFile()
-  if isfile then
-    local ok, content = pcall(function() return readfile(HWID_FILENAME) end)
-    if ok and content then return content end
-  end
-  return nil
-end
-
--- ฟังก์ชันสร้าง HWID ถาวร (ถ้าไม่มีไฟล์จะสร้าง GUID ใหม่และพยายามบันทึก)
-local function getHWID()
-  -- พยายามอ่านจากไฟล์ก่อน
-  local hw = readHWIDFromFile()
-  if hw and hw ~= "" then
-    return hw
-  end
-
-  -- ถ้าไม่มีไฟล์, สร้างจากข้อมูลที่เป็นไปได้: UserId + GUID
-  local seed = tostring(LocalPlayer.UserId) .. "-" .. HttpService:GenerateGUID(false)
-  -- แฮชง่ายๆ เพื่อให้สั้นลง (ใช้ JSONEncode แล้ว CRC แบบง่าย)
-  local hwid = HttpService:GenerateGUID(false) -- พอใช้งาน (ไม่สามารถได้ HW จริงของเครื่องบน Roblox)
-  -- พยายามเขียนไฟล์
-  saveHWIDToFile(hwid)
-  return hwid
-end
-
--- ---------- HTTP helper ----------
-local function postToServer(payload)
-  local body = HttpService:JSONEncode(payload)
-  local headers = { ["Content-Type"] = "application/json" }
-  local ok, res = pcall(function()
-    return HttpService:PostAsync(GoogleScriptURL, body, Enum.HttpContentType.ApplicationJson)
-  end)
-  if not ok then
-    return false, "HTTP request failed: " .. tostring(res)
-  end
-  local decoded = nil
-  local succ, dec = pcall(function() return HttpService:JSONDecode(res) end)
-  if not succ then
-    return false, "Failed to decode response"
-  end
-  return true, dec
-end
-
--- ---------- Key flow ----------
-local function redeemKeyFlow(keyString)
-  local hwid = getHWID()
-  local payload = {
-    token = GoogleToken,
-    action = "redeem",
-    key = tostring(keyString),
-    hwid = tostring(hwid),
-    usedBy = tostring(LocalPlayer.Name)
-  }
-
-  local ok, res = postToServer(payload)
-  if not ok then
-    return false, res
-  end
-
-  if res.success then
-    -- ตัวอย่าง: เก็บสถานะ (คุณอาจบันทึกลงตัวแปร global หรือ file เพิ่มเติม)
-    return true, res
-  else
-    return false, res.message or "Unknown error"
-  end
-end
-
--- ---------- UI: ปุ่มใส่คีย์ (Rayfield) ----------
--- ผมใช้ CreateInput + CreateButton ซึ่งมีอยู่ใน Rayfield forks หลายตัว
--- หากเวอร์ชันคุณต่าง ให้ใช้วิธีรับ input ที่ Rayfield ของคุณรองรับ
-local inputBox = MainTab:CreateInput({
-  Name = "ใส่คีย์ (Key)",
-  PlaceholderText = "วางคีย์ที่นี่แล้วกด Submit",
-  RemoveTextAfterFocusLost = false,
-  Callback = function(text) end
-})
-
-local submitBtn = MainTab:CreateButton({
-  Name = "ยืนยันคีย์",
-  Callback = function()
-    local key = inputBox.Configuration.Value or inputBox.Value or inputBox.Text or inputBox -- try fields
-    if not key or key == "" then
-      Rayfield:Notify({Title="SLEEP HUB", Content="กรุณากรอกคีย์", Duration=3})
-      return
+-- ฟังก์ชันอ่าน/บันทึกข้อมูล
+local function SaveData(data)
+    local json = HttpService:JSONEncode(data)
+    if writefile then
+        writefile(KeySystem.SaveFile, json)
     end
-    Rayfield:Notify({Title="SLEEP HUB", Content="กำลังตรวจสอบคีย์...", Duration=2})
-    local ok, res = redeemKeyFlow(key)
-    if ok then
-      -- ตัวอย่าง: แสดงผล และ โหลดสคริปต์เกมส์ (เช่นที่คุณต้องการ)
-      Rayfield:Notify({Title="SLEEP HUB", Content="ยืนยันคีย์สำเร็จ! โหลดสคริปต์...", Duration=4})
-      -- ถ้าต้องการอ่านเวลาที่เหลือ: res.expireTsMs หรือ res.remainingMs
-      print("Key response:", game:GetService("HttpService"):JSONEncode(res))
-      -- ตัวอย่าง: โหลดสคริปต์จริงของเกมเมื่อสำเร็จ
-      -- (ใส่โค้ดโหลดสคริปต์ของคุณในนี้ เช่น loadstring(HttpGet(...)) )
-      -- ตัวอย่างจากเดิมในสคริปต์ของคุณ:
-      -- if Kayak and Surf then loadstring(game:HttpGet("..."))() end
+end
+
+local function LoadData()
+    if isfile and isfile(KeySystem.SaveFile) then
+        local success, data = pcall(function()
+            return HttpService:JSONDecode(readfile(KeySystem.SaveFile))
+        end)
+        return success and data or {}
+    end
+    return {}
+end
+
+-- ฟังก์ชันตรวจสอบคีย์กับ API
+local function ValidateKey(key, hwid)
+    local payload = {
+        key = key,
+        hwid = hwid
+    }
+    
+    local headers = {
+        ["Content-Type"] = "application/json",
+        ["X-API-Key"] = KeySystem.ApiKey
+    }
+    
+    local success, response = pcall(function()
+        local req = request({
+            Url = KeySystem.ApiUrl .. "/validate_key",
+            Method = "POST",
+            Headers = headers,
+            Body = HttpService:JSONEncode(payload)
+        })
+        return HttpService:JSONDecode(req.Body)
+    end)
+    
+    return success and response
+end
+
+-- โหลดข้อมูลที่บันทึกไว้
+local savedData = LoadData()
+local savedKey = savedData.key
+local savedExpiry = savedData.expiry_date
+
+-- ตรวจสอบคีย์ที่บันทึกไว้
+local function CheckSavedKey()
+    if not savedKey or not savedExpiry then return false end
+    
+    local currentTime = os.time()
+    local expiryTime = os.time({
+        year = string.sub(savedExpiry, 1, 4),
+        month = string.sub(savedExpiry, 6, 7),
+        day = string.sub(savedExpiry, 9, 10),
+        hour = string.sub(savedExpiry, 12, 13),
+        min = string.sub(savedExpiry, 15, 16),
+        sec = string.sub(savedExpiry, 18, 19)
+    })
+    
+    if currentTime > expiryTime then
+        return false -- คีย์หมดอายุ
+    end
+    
+    -- ตรวจสอบกับ API
+    local hwid = GetHWID()
+    local result = ValidateKey(savedKey, hwid)
+    
+    if result and result.valid then
+        return true
+    end
+    
+    return false
+end
+
+-- Main Window Setup
+repeat task.wait() until game:IsLoaded()
+
+local placeId = game.PlaceId
+
+local supported = {
+    [136404558442020] = { -- Kayak & Surf
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/main/Kayak%20and%20Surf",
+        name = "Kayak and Surf"
+    },
+    [134457821643846] = { -- Arcade Slam Simulator
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Arcade%20Slam%20Simulator",
+        name = "Arcade Slam Simulator"
+    },
+    [103007810968052] = { -- Chicken Cannon Simulator
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Chicken%20Cannon%20Simulator",
+        name = "Chicken Cannon Simulator"
+    },
+    [126881587516442] = { -- Break a Friend
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Break%20a%20Friend",
+        name = "Break a Friend"
+    },
+    [75985597910430] = { -- +1 Speed School Escape.lua
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%2B1%20Speed%20School%20Escape.lua",
+        name = "+1 Speed School Escape.lua"
+    },
+    [85050171250159] = { -- Poop a Big Poop
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Poop%20a%20Big%20Poop.lua",
+        name = "Poop a Big Poop"
+    },
+    [86260905411899] = { -- Train to Escape Prison
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%5B ⭐%EF%B8%8FUPD4%5DTrain%20to%20Escape%20Prison",
+        name = "Train to Escape Prison"
+    },
+    [120564326011184] = { -- Build a YouTube Empire!
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
+        name = "Build a YouTube Empire!"
+    }
+}
+
+-- สร้าง UI
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/wind"))()
+
+-- Check saved key first
+local hasValidSavedKey = CheckSavedKey()
+
+-- แก้ไข Window Configuration
+local Window = WindUI:CreateWindow({
+    Title = "SLEEP HUB",
+    Author = "by .ftgs • Footagesus",
+    Folder = "ftgshub",
+    Icon = "rbxassetid://121030902371363",
+    IconSize = 22*2,
+    NewElements = true,
+    
+    HideSearchBar = false,
+    
+    OpenButton = {
+        Title = " SLEEP HUB UI",
+        CornerRadius = UDim.new(1,0),
+        StrokeThickness = 3,
+        Enabled = true,
+        Draggable = true,
+        OnlyMobile = false,
+        
+        Color = ColorSequence.new(
+            Color3.fromHex("#30FF6A"), 
+            Color3.fromHex("#e7ff2f")
+        )
+    },
+    KeySystem = {
+        Title = "SLEEP HUB | Key System",
+        Note = "ใส่คีย์ที่ได้จาก Discord Bot หรือติดต่อเเอดมิน",
+        KeyValidator = function(EnteredKey)
+            if hasValidSavedKey and savedKey == EnteredKey then
+                -- คีย์เดิมยังใช้งานได้
+                local hwid = GetHWID()
+                local result = ValidateKey(EnteredKey, hwid)
+                if result and result.valid then
+                    return true
+                end
+            end
+            
+            -- ตรวจสอบคีย์ใหม่
+            local hwid = GetHWID()
+            local result = ValidateKey(EnteredKey, hwid)
+            
+            if result and result.valid then
+                -- บันทึกคีย์
+                SaveData({
+                    key = EnteredKey,
+                    hwid = hwid,
+                    expiry_date = result.expiry_date or savedExpiry
+                })
+                return true
+            else
+                -- แสดงข้อความผิดพลาด
+                if result then
+                    warn("Key Validation Error: " .. result.message)
+                end
+                return false
+            end
+        end
+    }
+})
+
+-- ถ้ามีคีย์ที่บันทึกไว้และยังใช้งานได้ ให้ข้าม KeySystem
+if hasValidSavedKey then
+    Window.KeySystem = nil
+end
+
+-- โหลดสคริปต์
+local data = supported[placeId]
+if data then
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(data.url))()
+    end)
+    if success then
+        print("Loaded: " .. data.name)
     else
-      Rayfield:Notify({Title="SLEEP HUB", Content="คีย์ไม่ถูกต้อง/หมดอายุ/ถูกผูกแล้ว: "..tostring(res), Duration=5})
+        warn("Script load failed for " .. data.name .. " → " .. tostring(err))
+        game.Players.LocalPlayer:Kick("ดาวน์โหลดสคริปต์ไม่สำเร็จ")
     end
-  end
-})
+else
+    game.Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
+    task.wait(3)
+    game:Shutdown()
+end
