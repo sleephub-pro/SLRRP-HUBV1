@@ -1,220 +1,84 @@
--- ใส่ไว้ที่ด้านบนของสคริปต์เดิม
-local KeySystem = {
-    ApiUrl = "http://your-server-ip:5000", -- เปลี่ยนเป็น IP/Domain ของเซิร์ฟเวอร์
-    ApiKey = "your_secret_api_key_here", -- API_SECRET_KEY จาก .env
-    SaveFile = "sleep_hub_key.json"
-}
+-- ที่ส่วน KeySystem ของ WindUI:
+local HttpService = game:GetService("HttpService")
+local API_URL = "https://your-server.example.com/validate" -- เปลี่ยนเป็น URL จริง
+local WRITEFILE_NAME = "ftgshub_key.txt" -- ใช้กับ exploit ที่มี writefile/readfile
 
--- ฟังก์ชันสร้าง HWID
-local function GetHWID()
-    local success, hwid = pcall(function()
-        return game:GetService("RbxAnalyticsService"):GetClientId()
-    end)
-    return success and hwid or tostring(game.Players.LocalPlayer.UserId)
-end
-
--- ฟังก์ชันอ่าน/บันทึกข้อมูล
-local function SaveData(data)
-    local json = HttpService:JSONEncode(data)
-    if writefile then
-        writefile(KeySystem.SaveFile, json)
-    end
-end
-
-local function LoadData()
-    if isfile and isfile(KeySystem.SaveFile) then
-        local success, data = pcall(function()
-            return HttpService:JSONDecode(readfile(KeySystem.SaveFile))
-        end)
-        return success and data or {}
-    end
-    return {}
-end
-
--- ฟังก์ชันตรวจสอบคีย์กับ API
-local function ValidateKey(key, hwid)
-    local payload = {
-        key = key,
-        hwid = hwid
-    }
-    
-    local headers = {
-        ["Content-Type"] = "application/json",
-        ["X-API-Key"] = KeySystem.ApiKey
-    }
-    
-    local success, response = pcall(function()
-        local req = request({
-            Url = KeySystem.ApiUrl .. "/validate_key",
-            Method = "POST",
-            Headers = headers,
-            Body = HttpService:JSONEncode(payload)
-        })
-        return HttpService:JSONDecode(req.Body)
-    end)
-    
-    return success and response
-end
-
--- โหลดข้อมูลที่บันทึกไว้
-local savedData = LoadData()
-local savedKey = savedData.key
-local savedExpiry = savedData.expiry_date
-
--- ตรวจสอบคีย์ที่บันทึกไว้
-local function CheckSavedKey()
-    if not savedKey or not savedExpiry then return false end
-    
-    local currentTime = os.time()
-    local expiryTime = os.time({
-        year = string.sub(savedExpiry, 1, 4),
-        month = string.sub(savedExpiry, 6, 7),
-        day = string.sub(savedExpiry, 9, 10),
-        hour = string.sub(savedExpiry, 12, 13),
-        min = string.sub(savedExpiry, 15, 16),
-        sec = string.sub(savedExpiry, 18, 19)
-    })
-    
-    if currentTime > expiryTime then
-        return false -- คีย์หมดอายุ
-    end
-    
-    -- ตรวจสอบกับ API
-    local hwid = GetHWID()
-    local result = ValidateKey(savedKey, hwid)
-    
-    if result and result.valid then
-        return true
-    end
-    
-    return false
-end
-
--- Main Window Setup
-repeat task.wait() until game:IsLoaded()
-
-local placeId = game.PlaceId
-
-local supported = {
-    [136404558442020] = { -- Kayak & Surf
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/main/Kayak%20and%20Surf",
-        name = "Kayak and Surf"
-    },
-    [134457821643846] = { -- Arcade Slam Simulator
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Arcade%20Slam%20Simulator",
-        name = "Arcade Slam Simulator"
-    },
-    [103007810968052] = { -- Chicken Cannon Simulator
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Chicken%20Cannon%20Simulator",
-        name = "Chicken Cannon Simulator"
-    },
-    [126881587516442] = { -- Break a Friend
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Break%20a%20Friend",
-        name = "Break a Friend"
-    },
-    [75985597910430] = { -- +1 Speed School Escape.lua
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%2B1%20Speed%20School%20Escape.lua",
-        name = "+1 Speed School Escape.lua"
-    },
-    [85050171250159] = { -- Poop a Big Poop
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Poop%20a%20Big%20Poop.lua",
-        name = "Poop a Big Poop"
-    },
-    [86260905411899] = { -- Train to Escape Prison
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%5B ⭐%EF%B8%8FUPD4%5DTrain%20to%20Escape%20Prison",
-        name = "Train to Escape Prison"
-    },
-    [120564326011184] = { -- Build a YouTube Empire!
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
-        name = "Build a YouTube Empire!"
-    }
-}
-
--- สร้าง UI
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/wind"))()
-
--- Check saved key first
-local hasValidSavedKey = CheckSavedKey()
-
--- แก้ไข Window Configuration
-local Window = WindUI:CreateWindow({
-    Title = "SLEEP HUB",
-    Author = "by .ftgs • Footagesus",
-    Folder = "ftgshub",
-    Icon = "rbxassetid://121030902371363",
-    IconSize = 22*2,
-    NewElements = true,
-    
-    HideSearchBar = false,
-    
-    OpenButton = {
-        Title = " SLEEP HUB UI",
-        CornerRadius = UDim.new(1,0),
-        StrokeThickness = 3,
-        Enabled = true,
-        Draggable = true,
-        OnlyMobile = false,
-        
-        Color = ColorSequence.new(
-            Color3.fromHex("#30FF6A"), 
-            Color3.fromHex("#e7ff2f")
-        )
-    },
-    KeySystem = {
-        Title = "SLEEP HUB | Key System",
-        Note = "ใส่คีย์ที่ได้จาก Discord Bot หรือติดต่อเเอดมิน",
-        KeyValidator = function(EnteredKey)
-            if hasValidSavedKey and savedKey == EnteredKey then
-                -- คีย์เดิมยังใช้งานได้
-                local hwid = GetHWID()
-                local result = ValidateKey(EnteredKey, hwid)
-                if result and result.valid then
-                    return true
-                end
-            end
-            
-            -- ตรวจสอบคีย์ใหม่
-            local hwid = GetHWID()
-            local result = ValidateKey(EnteredKey, hwid)
-            
-            if result and result.valid then
-                -- บันทึกคีย์
-                SaveData({
-                    key = EnteredKey,
-                    hwid = hwid,
-                    expiry_date = result.expiry_date or savedExpiry
-                })
-                return true
-            else
-                -- แสดงข้อความผิดพลาด
-                if result then
-                    warn("Key Validation Error: " .. result.message)
-                end
-                return false
-            end
+local function trySaveKeyLocal(key)
+    pcall(function()
+        if writefile then
+            writefile(WRITEFILE_NAME, key)
         end
-    }
-})
-
--- ถ้ามีคีย์ที่บันทึกไว้และยังใช้งานได้ ให้ข้าม KeySystem
-if hasValidSavedKey then
-    Window.KeySystem = nil
+    end)
 end
 
--- โหลดสคริปต์
-local data = supported[placeId]
-if data then
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(data.url))()
+local function tryReadLocalKey()
+    local ok, content = pcall(function()
+        if isfile and isfile(WRITEFILE_NAME) then
+            return readfile(WRITEFILE_NAME)
+        end
+        return nil
     end)
-    if success then
-        print("Loaded: " .. data.name)
-    else
-        warn("Script load failed for " .. data.name .. " → " .. tostring(err))
-        game.Players.LocalPlayer:Kick("ดาวน์โหลดสคริปต์ไม่สำเร็จ")
+    if ok then return content end
+    return nil
+end
+
+-- พยายามตรวจหา HWID ของ executor (ตัวอย่าง: syn)
+local function getHWID()
+    local ok, hw = pcall(function()
+        if syn and syn.get_guid then
+            return syn.get_guid()
+        elseif identifyexecutor then
+            return identifyexecutor()
+        end
+        -- ไม่มีก็ส่ง placeholder (แนะนำให้ดัดแปลงตาม executor)
+        return "unknown_hwid"
+    end)
+    if ok then return hw end
+    return "unknown_hwid"
+end
+
+local function validateKeyRemote(key)
+    local hw = getHWID()
+    local url = API_URL .. "?key=" .. HttpService:UrlEncode(key) .. "&hwid=" .. HttpService:UrlEncode(hw)
+    local ok, resp = pcall(function()
+        return HttpService:GetAsync(url)
+    end)
+    if not ok then
+        return false, "ไม่สามารถติดต่อ server"
     end
-else
-    game.Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
-    task.wait(3)
-    game:Shutdown()
+    local parsed = nil
+    local success, err = pcall(function() parsed = HttpService:JSONDecode(resp) end)
+    if not success then
+        return false, "response จาก server ไม่ถูกต้อง"
+    end
+    if parsed.success and parsed.valid then
+        -- บันทึกคีย์ไว้เครื่อง (เพื่อไม่ต้องใส่ใหม่)
+        trySaveKeyLocal(key)
+        return true, "Key valid"
+    else
+        return false, parsed.message or "invalid"
+    end
+end
+
+-- ตัวอย่าง KeyValidator สำหรับ WindUI
+KeyValidator = function(EnteredKey)
+    -- ถ้ามีค่าเก็บในเครื่อง ให้เช็กก่อน
+    local localKey = tryReadLocalKey()
+    if localKey and localKey == EnteredKey then
+        -- อาจยังอยากเช็ก remote ว่าไม่หมดอายุ -> แต่เพื่อประสิทธิภาพ เราตรวจ remote คร่าวๆ
+        local ok, msg = validateKeyRemote(EnteredKey)
+        if ok then return true end
+        -- หาก remote บอกหมดอายุให้ return false
+        return false
+    end
+
+    -- ถ้าหากยังไม่มี ให้เรียก validate remote
+    local ok, msg = validateKeyRemote(EnteredKey)
+    if ok then
+        -- ผ่าน -> เก็บ
+        return true
+    else
+        -- ไม่ผ่าน
+        return false
+    end
 end
