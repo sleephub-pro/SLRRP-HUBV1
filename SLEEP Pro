@@ -1,0 +1,27 @@
+repeat task.wait() until game:IsLoaded()
+
+local placeId = game.PlaceId
+
+local supported = {
+    [101953168527257] = { -- Spear Fishing
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20FishinsPRO.lua",
+        name = "Spear Fishing"
+    }
+}
+
+local data = supported[placeId]
+if data then
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(data.url))()
+    end)
+    if success then
+        print("Loaded: " .. data.name)
+    else
+        warn("Script load failed for " .. data.name .. " → " .. tostring(err))
+        game.Players.LocalPlayer:Kick("ดาวน์โหลดสคริปต์ไม่สำเร็จ")
+    end
+else
+    game.Players.LocalPlayer:Kick("ไม่รองรับเกมนี้")
+    task.wait(3)
+    game:Shutdown()
+end
