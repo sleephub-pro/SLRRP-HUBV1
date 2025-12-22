@@ -98,7 +98,16 @@ local Toggle = Tab:Toggle({
         --// PATH
         --------------------------------------------------
         local WorldSea = workspace:WaitForChild("WorldSea")
-        local ToolFolder = workspace:WaitForChild("Zoogo1001")
+-- Services
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- ชื่อโฟลเดอร์ตามชื่อผู้เล่น
+local playerName = player.Name
+
+-- หาโฟลเดอร์ใน workspace ตามชื่อผู้เล่น
+local ToolFolder = workspace:WaitForChild(playerName)
+
         local FireRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("FireRE")
 
         --------------------------------------------------
@@ -237,7 +246,16 @@ local Toggle = Tab:Toggle({
         local player = Players.LocalPlayer
         
         local WorldSea = workspace:WaitForChild("WorldSea")
-        local ToolFolder = workspace:WaitForChild("Zoogo1001")
+        -- Services
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- ชื่อโฟลเดอร์ตามชื่อผู้เล่น
+local playerName = player.Name
+
+-- หาโฟลเดอร์ใน workspace ตามชื่อผู้เล่น
+local ToolFolder = workspace:WaitForChild(playerName)
+
         local FireRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("FireRE")
 
         local FIRE_DELAY = 0.1
