@@ -98,16 +98,7 @@ local Toggle = Tab:Toggle({
         --// PATH
         --------------------------------------------------
         local WorldSea = workspace:WaitForChild("WorldSea")
--- Services
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
--- ชื่อโฟลเดอร์ตามชื่อผู้เล่น
-local playerName = player.Name
-
--- หาโฟลเดอร์ใน workspace ตามชื่อผู้เล่น
-local ToolFolder = workspace:WaitForChild(playerName)
-
+        local ToolFolder = workspace:WaitForChild("Zoogo1001")
         local FireRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("FireRE")
 
         --------------------------------------------------
@@ -246,16 +237,7 @@ local Toggle = Tab:Toggle({
         local player = Players.LocalPlayer
         
         local WorldSea = workspace:WaitForChild("WorldSea")
--- Services
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
--- ชื่อโฟลเดอร์ตามชื่อผู้เล่น
-local playerName = player.Name
-
--- หาโฟลเดอร์ใน workspace ตามชื่อผู้เล่น
-local ToolFolder = workspace:WaitForChild(playerName)
-
+        local ToolFolder = workspace:WaitForChild("Zoogo1001")
         local FireRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("FireRE")
 
         local FIRE_DELAY = 0.1
@@ -594,6 +576,66 @@ local Slider = Tab:Slider({
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if humanoid then
             humanoid.WalkSpeed = value
+        end
+    end
+})
+
+
+
+
+
+
+
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+local running = false
+
+local function StartLoop()
+    task.spawn(function()
+        while running do
+            task.wait(0.01)
+
+            local gui = player:FindFirstChild("PlayerGui")
+            if not gui then continue end
+
+            local screenUser = gui:FindFirstChild("ScreenUser")
+            if not screenUser then continue end
+
+            local skillFolder = screenUser:FindFirstChild("Skill")
+            if not skillFolder then continue end
+
+            for _, v in ipairs(skillFolder:GetChildren()) do
+                -- 🔍 ตรวจชื่อ Skill + ตัวเลข
+                if string.match(v.Name, "^Skill%d+$") then
+                    local args = {
+                        "Skill",
+                        {
+                            ID = v.Name
+                        }
+                    }
+
+                    ReplicatedStorage
+                        :WaitForChild("Remotes")
+                        :WaitForChild("FishRE")
+                        :FireServer(unpack(args))
+                end
+            end
+        end
+    end)
+end
+local Toggle = Tab:Toggle({
+    Title = "Auto Skill",
+    Desc = "ตรวจ Skill + ตัวเลข แล้วยิงอัตโนมัติ",
+    Icon = "bird",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(state)
+        running = state
+        if state then
+            StartLoop()
         end
     end
 })
