@@ -657,3 +657,127 @@ local Toggle = Tab:Toggle({
         end
     end
 })
+
+
+
+
+
+
+
+
+
+
+
+
+-- SERVICES
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- PATH
+local WorldBoss = workspace:WaitForChild("WorldBoss")
+local PointFolder = WorldBoss:WaitForChild("Point")
+
+local FireRE = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("FireRE")
+
+-- STATE
+local ToggleState = false
+local OldCFrame = nil
+local LoopConnection = nil
+
+-- FUNCTION : GET ALL TOOLS
+local function GetAllTools()
+	local tools = {}
+
+	for _, v in pairs(character:GetChildren()) do
+		if v:IsA("Tool") then
+			table.insert(tools, v)
+		end
+	end
+
+	return tools
+end
+
+-- MAIN LOOP
+local function StartLoop()
+	if LoopConnection then return end
+
+	LoopConnection = RunService.Heartbeat:Connect(function()
+		if not ToggleState then return end
+
+		for _, point in pairs(PointFolder:GetChildren()) do
+			if point:IsA("BasePart") or point:IsA("Model") then
+
+				-- SAVE POSITION
+				if not OldCFrame then
+					OldCFrame = humanoidRootPart.CFrame
+				end
+
+				-- TELEPORT (นิ่ง)
+				if point:IsA("BasePart") then
+					humanoidRootPart.CFrame = point.CFrame
+				elseif point:IsA("Model") and point.PrimaryPart then
+					humanoidRootPart.CFrame = point.PrimaryPart.CFrame
+				end
+
+				-- FIRE ALL TOOLS
+				for _, tool in pairs(GetAllTools()) do
+					local hitPos = point.Position
+
+					local args = {
+						"Hit",
+						{
+							fishInstance = point,
+							HitPos = hitPos,
+							toolInstance = tool
+						}
+					}
+
+					pcall(function()
+						FireRE:FireServer(unpack(args))
+					end)
+				end
+			end
+		end
+
+		-- ถ้า Point หาย → กลับที่เดิม
+		if #PointFolder:GetChildren() == 0 and OldCFrame then
+			humanoidRootPart.CFrame = OldCFrame
+			OldCFrame = nil
+		end
+	end)
+end
+
+local function StopLoop()
+	if LoopConnection then
+		LoopConnection:Disconnect()
+		LoopConnection = nil
+	end
+
+	if OldCFrame then
+		humanoidRootPart.CFrame = OldCFrame
+		OldCFrame = nil
+	end
+end
+
+-- TOGGLE UI
+local Toggle = Tab:Toggle({
+	Title = "WorldBoss Auto Hit",
+	Desc = "Auto Hit + Auto Tool + Auto TP",
+	Icon = "bird",
+	Type = "Checkbox",
+	Value = false,
+	Callback = function(state)
+		ToggleState = state
+
+		if state then
+			StartLoop()
+		else
+			StopLoop()
+		end
+	end
+})
