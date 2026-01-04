@@ -7,7 +7,7 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/PROMAX/refs/heads/main/Chop%20Your%20Tree",
         name = "Chop Your Tree"
     },
-local supported = {
+
     [101953168527257] = { -- Spear Fishing
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20FishinsPRO.lua",
         name = "Spear Fishing"
@@ -15,10 +15,12 @@ local supported = {
 }
 
 local data = supported[placeId]
+
 if data then
     local success, err = pcall(function()
         loadstring(game:HttpGet(data.url))()
     end)
+
     if success then
         print("Loaded: " .. data.name)
     else
