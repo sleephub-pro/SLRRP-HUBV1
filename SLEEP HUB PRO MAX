@@ -3,6 +3,11 @@ repeat task.wait() until game:IsLoaded()
 local placeId = game.PlaceId
 
 local supported = {
+    [123557829667240] = { -- Chop Your Tree
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/main/Kayak%20and%20Surf",
+        name = "Chop Your Tree"
+    },
+local supported = {
     [101953168527257] = { -- Spear Fishing
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20FishinsPRO.lua",
         name = "Spear Fishing"
