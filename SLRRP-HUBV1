@@ -11,6 +11,10 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Arcade%20Slam%20Simulator",
         name = "Arcade Slam Simulator"
     },
+    [131623223084840] = { -- Escape Tsunami For Brainrots!
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Escape%20Tsunami%20For%20Brainrots!",
+        name = "Escape Tsunami For Brainrots!"
+    },
     [103007810968052] = { -- Chicken Cannon Simulator
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Chicken%20Cannon%20Simulator",
         name = "Chicken Cannon Simulator"
