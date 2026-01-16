@@ -35,6 +35,10 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Poop%20a%20Big%20Poop.lua",
         name = "Poop a Big Poop"
     },
+    [124311897657957] = { -- Break a Lucky Block!
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Break%20a%20Lucky%20Block!",
+        name = "Break a Lucky Block!"
+    },
     [86260905411899] = { -- Train to Escape Prison
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%5B⭐%EF%B8%8FUPD4%5DTrain%20to%20Escape%20Prison",
         name = "Train to Escape Prisong"
