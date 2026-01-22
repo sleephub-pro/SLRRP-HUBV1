@@ -751,3 +751,59 @@ local Toggle = Tab:Toggle({
 		end
 	end
 })
+
+
+
+
+
+
+
+
+
+
+
+local buffs = {
+    "GetMarshThing",
+    "GetIceborneThing",
+    "GetRainThing",
+    "GetSnowThing",
+    "GetBigThing",
+    "GetIrisThing"
+}
+
+local running = false
+
+Tab:Toggle({
+    Title = "ัรับอัลบั้มปลาทั้งหมด",
+    Desc = "",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(state)
+        running = state
+
+        task.spawn(function()
+            local FishRE = game:GetService("ReplicatedStorage")
+                :WaitForChild("Remotes")
+                :WaitForChild("FishRE")
+
+            while running do
+                for i = 1, 200 do
+                    for _, buff in ipairs(buffs) do
+                        if not running then break end
+
+                        FishRE:FireServer(
+                            "AlbumGetThing",
+                            {
+                                ID = "Fish" .. i,
+                                Param = buff
+                            }
+                        )
+
+                        task.wait(0.12)
+                    end
+                end
+                task.wait(3)
+            end
+        end)
+    end
+})
