@@ -11,11 +11,14 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/PROMAX/refs/heads/main/My%20Fishing%20Brainrots.lua",
         name = "My Fishing Brainrots"
     },
-    [124311897657957] = { -- ⛏️ Break a Lucky Block!
+    [75992362647444] = { -- [🍬TREATS!] Tap Simulator ✨
         url = "https://raw.githubusercontent.com/sleephub-pro/PROMAX/refs/heads/main/Break%20a%20Lucky%20Block.lua",
-        name = "⛏️ Break a Lucky Block!"
+        name = "[🍬TREATS!] Tap Simulator ✨"
     },
-
+    [124311897657957] = { -- Tap Simulator
+        url = "https://raw.githubusercontent.com/sleephub-pro/PROMAX/refs/heads/main/Tap%20Simulator",
+        name = "Tap Simulator"
+    },
     [101953168527257] = { -- Spear Fishing
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20FishinsPRO.lua",
         name = "Spear Fishing"
