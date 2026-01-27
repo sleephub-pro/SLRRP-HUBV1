@@ -12,7 +12,7 @@ local supported = {
         name = "My Fishing Brainrots"
     },
     [75992362647444] = { -- [🍬TREATS!] Tap Simulator ✨
-        url = "https://raw.githubusercontent.com/sleephub-pro/PROMAX/refs/heads/main/Break%20a%20Lucky%20Block.lua",
+        url = "https://raw.githubusercontent.com/sleephub-pro/PROMAX/refs/heads/main/Tap%20Simulator",
         name = "[🍬TREATS!] Tap Simulator ✨"
     },
     [124311897657957] = { -- Tap Simulator
