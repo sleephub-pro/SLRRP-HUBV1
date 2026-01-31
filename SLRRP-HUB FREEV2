@@ -51,6 +51,10 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/FREE/refs/heads/main/Snow%20Shovel%20Battle",
         name = "Train Snow Shovel Battleg"
     },
+[103571191458177] = { -- Dig Legends
+        url = "https://raw.githubusercontent.com/sleephub-pro/FREE/refs/heads/main/Dig%20Legends",
+        name = "Train Dig Legends"
+    },
     [123557829667240] = { -- Chop Your Tree
         url = "https://raw.githubusercontent.com/sleephub-pro/FREE/refs/heads/main/Chop%20Your%20Tree",
         name = "Train Chop Your Tree"
