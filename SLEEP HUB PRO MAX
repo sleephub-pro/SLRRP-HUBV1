@@ -71,6 +71,10 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/FREE/refs/heads/main/Dig%20Legends",
         name = "Train Dig Legends"
     },
+    [134763881293027] = { -- Steal From Brainrots
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Steal%20From%20Brainrots",
+        name = "Steal From Brainrots"
+    },
     [101953168527257] = { -- Spear Fishing
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20FishinsPRO.lua",
         name = "Spear Fishing"
