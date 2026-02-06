@@ -1,0 +1,582 @@
+--[[https://github.com/Nebula-Softworks/Luna-Interface-Suite/blob/main/Documentation.md]]
+local Luna = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nebula-Softworks/Luna-Interface-Suite/refs/heads/master/source.lua", true))()
+
+local Window = Luna:CreateWindow({
+	Name = "SLEEP HUB PRO MAX", -- This Is Title Of Your Window
+	Subtitle = "A Gray Subtitle", -- A Gray Subtitle next To the main title.
+	LogoID = "113876946783161", -- The Asset ID of your logo. Set to nil if you do not have a logo for Luna to use.
+	LoadingEnabled = true, -- Whether to enable the loading animation. Set to false if you do not want the loading screen or have your own custom one.
+	LoadingTitle = "WELCOME TO SLEEP HUB PRO MAXe", -- Header for loading screen
+	LoadingSubtitle = "by SLEEP HUB", -- Subtitle for loading screen
+
+	ConfigSettings = {
+		RootFolder = nil, -- The Root Folder Is Only If You Have A Hub With Multiple Game Scripts and u may remove it. DO NOT ADD A SLASH
+		ConfigFolder = "Big Hub" -- The Name Of The Folder Where Luna Will Store Configs For This Script. DO NOT ADD A SLASH
+	},
+
+	KeySystem = false, -- As Of Beta 6, Luna Has officially Implemented A Key System!
+	KeySettings = {
+		Title = "SPEEL HUB Key",
+		Subtitle = "Key System",
+		Note = "Best Key System Ever! Also, Please Use A HWID Keysystem like Pelican, Luarmor etc. that provide key strings based on your HWID since putting a simple string is very easy to bypass, the key is 1234!",
+		SaveInRoot = false, -- Enabling will save the key in your RootFolder (YOU MUST HAVE ONE BEFORE ENABLING THIS OPTION)
+		SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+		Key = {"1234"},
+		SecondAction = {
+			Enabled = true,
+			Type = "Link", -- You can also put discord as an option, if your are doing that, don’t include discord.gg as Luna will auto add it as a prefix, just replace it with your identifier, example, if your are doing discord.gg/mspaint, just use mspaint.
+			Parameter = ""
+		}
+	}
+})
+
+Window:CreateHomeTab({
+	SupportedExecutors = {
+		"Synapse X",
+		"Krnl",
+		"ProtoSmasher",
+		"Fluxus",
+		"Script-Ware",
+		"EasyExploits",
+		"Electron",
+		"JJSploit",
+		"Calamari",
+		"SirHurt",
+		"Sentinel",
+		"WEAREDEVS",
+		"Comet",
+		"Cellery",
+		"Wave",
+		"CODex",
+		"Delta"
+	},
+	DiscordInvite = "1234", -- same thing here
+	Icon = 1
+})
+
+local Tab = Window:CreateTab({
+    Name = "ออโต้ฟาร์ม",
+    Icon = "view_in_ar",
+    ImageSource = "Material",
+    ShowTitle = true -- This will determine whether the big header text in the tab will show
+})
+
+Tab:CreateSection("Section Example")
+
+
+
+
+
+
+
+
+
+-- [[ Brainrot Revenue Scanner + Auto-Float Patrol + Interaction ]]
+-- ใส่ใน LocalScript และตรวจสอบว่ามีตัวแปร Tab (UI Library) ให้เรียกใช้
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local LP = Players.LocalPlayer
+
+-- === คอนฟิกจุดลอย (Patrol Points) ===
+local PointA = Vector3.new(404.60, 35.14, -424.30)
+local PointB = Vector3.new(404.60, 35.14, -77.49)
+local FloatSpeed = 125 -- ความเร็วในการลอย (ปรับเพิ่ม/ลดได้)
+
+-- === Helper utilities ===
+local function parseRevenueString(txt)
+    if not txt or txt == "" then return 0 end
+    local clean = txt:gsub("%s",""):gsub("%$",""):gsub(",",""):gsub("/s","")
+    local numPart, suffix = clean:match("([%d%.]+)([KMkm]?)")
+    if not numPart then return 0 end
+    local num = tonumber(numPart) or 0
+    if suffix then
+        suffix = suffix:upper()
+        if suffix == "K" then num = num * 1000
+        elseif suffix == "M" then num = num * 1000000 end
+    end
+    return num
+end
+
+local function toNumberFromUserInput(input)
+    if not input or input == "" then return 0 end
+    input = tostring(input):gsub("%s",""):gsub(",",""):gsub("%$",""):gsub("/s","")
+    return parseRevenueString(input)
+end
+
+local function safeGetChildren(parent)
+    local ok, res = pcall(function() return parent:GetChildren() end)
+    return ok and res or {}
+end
+
+-- === Exclusion Logic (จุดที่ไม่ต้องการให้วาปไป) ===
+local excludedSpawnpoints = {}
+local function addExclusionByPathCheck()
+    excludedSpawnpoints = {} -- reset
+    local bases = Workspace:FindFirstChild("Brainrot Bases")
+    if not bases then return end
+
+    local base1 = bases:FindFirstChild("Base 1")
+    if base1 and base1:FindFirstChild("Spawnpoints") then
+        local sp = base1.Spawnpoints:FindFirstChild("1")
+        if sp then excludedSpawnpoints[sp] = true end
+        local children = safeGetChildren(base1.Spawnpoints)
+        if children[2] then excludedSpawnpoints[children[2]] = true end
+    end
+
+    local base2 = bases:FindFirstChild("Base 2")
+    if base2 and base2:FindFirstChild("Spawnpoints") then
+        local sp3 = base2.Spawnpoints:FindFirstChild("3")
+        if sp3 then excludedSpawnpoints[sp3] = true end
+    end
+end
+
+local function isExcluded(spawnpoint)
+    if not spawnpoint then return false end
+    if excludedSpawnpoints[spawnpoint] then return true end
+    local path = tostring(spawnpoint:GetFullName())
+    if path:match("Brainrot Bases%.Base 1%.Spawnpoints%.1$") then return true end
+    if path:match("Brainrot Bases%.Base 2%.Spawnpoints%.3$") then return true end
+    return false
+end
+
+-- === Scanning Logic ===
+local function getRevenueFromSpawn(spawnpoint)
+    if not spawnpoint or not spawnpoint:IsA("Instance") then return 0 end
+    local hrp = spawnpoint:FindFirstChild("HumanoidRootPart", true)
+    if not hrp then return 0 end
+
+    local stats = hrp:FindFirstChild("Brainrot Stats") or hrp:FindFirstChildWhichIsA("Folder")
+    local billboard = stats and (stats:FindFirstChildWhichIsA("BillboardGui") or stats:FindFirstChild("BillboardGui"))
+    
+    if billboard then
+        local revLabel = billboard:FindFirstChild("Revenue") or billboard:FindFirstChildWhichIsA("TextLabel")
+        if revLabel then return parseRevenueString(revLabel.Text) end
+    end
+    
+    local revLabelFallback = spawnpoint:FindFirstChild("Revenue", true)
+    if revLabelFallback and revLabelFallback:IsA("TextLabel") then
+        return parseRevenueString(revLabelFallback.Text)
+    end
+    return 0
+end
+
+local function scanAllSpawnpoints()
+    local results = {}
+    local bases = Workspace:FindFirstChild("Brainrot Bases")
+    if not bases then return results end
+    for _, base in pairs(safeGetChildren(bases)) do
+        local spawnContainer = base:FindFirstChild("Spawnpoints")
+        if spawnContainer then
+            for _, sp in pairs(safeGetChildren(spawnContainer)) do
+                local rev = getRevenueFromSpawn(sp)
+                table.insert(results, {spawn = sp, revenue = rev})
+            end
+        end
+    end
+    return results
+end
+
+-- === Teleport & Interact ===
+local function teleportToCFrame(cframe)
+    if not LP.Character then return false end
+    local hrp = LP.Character:FindFirstChild("HumanoidRootPart") or LP.Character:FindFirstChildWhichIsA("BasePart")
+    if not hrp then return false end
+    hrp.CFrame = cframe + Vector3.new(0, 3, 0)
+    return true
+end
+
+local function tryInteractPromptIn(spawn)
+    local prompt = nil
+    for _, desc in pairs(spawn:GetDescendants()) do
+        if desc:IsA("ProximityPrompt") then prompt = desc; break end
+    end
+    if not prompt and spawn.Parent then
+        for _, d in pairs(spawn.Parent:GetDescendants()) do
+            if d:IsA("ProximityPrompt") then prompt = d; break end
+        end
+    end
+    if not prompt then return false end
+
+    pcall(function()
+        if typeof(fireproximityprompt) == "function" then
+            fireproximityprompt(prompt)
+        elseif prompt.InputHoldBegin then
+            prompt:InputHoldBegin()
+            task.wait(0.2)
+            prompt:InputHoldEnd()
+        end
+    end)
+    return true
+end
+
+local function teleportToClaimBrainrot()
+    local claim = Workspace:FindFirstChild("ClaimBrainrot", true)
+    if claim then
+        if claim:IsA("BasePart") then
+            teleportToCFrame(claim.CFrame)
+            return true
+        elseif claim:IsA("Model") then
+            local cf = claim.PrimaryPart and claim.PrimaryPart.CFrame or (claim:FindFirstChildWhichIsA("BasePart") and claim:FindFirstChildWhichIsA("BasePart").CFrame)
+            if cf then teleportToCFrame(cf); return true end
+        end
+    end
+    return false
+end
+
+-- === Main Loop & Patrol ===
+local thresholdValue = 0
+local shouldRun = false
+
+-- ฟังก์ชันลอยไปมาระหว่างจุด
+local function startPatrol()
+    local targetPos = PointB
+    spawn(function()
+        while shouldRun do
+            local char = LP.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            
+            if hrp and shouldRun then
+                -- สแกนหาเป้าหมายก่อนเคลื่อนที่ในเฟรมนี้
+                local candidates = scanAllSpawnpoints()
+                table.sort(candidates, function(a,b) return a.revenue > b.revenue end)
+                
+                local selected = nil
+                for _, c in ipairs(candidates) do
+                    if c.revenue > thresholdValue and not isExcluded(c.spawn) then
+                        local targetPart = c.spawn:IsA("BasePart") and c.spawn or c.spawn:FindFirstChildWhichIsA("BasePart", true)
+                        if targetPart then
+                            selected = {spawn = c.spawn, target = targetPart, revenue = c.revenue}
+                            break
+                        end
+                    end
+                end
+
+                -- ถ้าเจอเป้าหมาย
+                if selected then
+                    print("[Scanner] Found Target:", selected.revenue)
+                    teleportToCFrame(selected.target.CFrame)
+                    task.wait(0.3)
+                    tryInteractPromptIn(selected.spawn)
+                    task.wait(0.3)
+                    teleportToClaimBrainrot()
+                    task.wait(1) -- พักนิดนึงก่อนกลับไปลอยต่อ
+                else
+                    -- ถ้าไม่เจอเป้าหมาย ให้ลอยต่อไปยังจุดหมาย (Patrol)
+                    local currentPos = hrp.Position
+                    local direction = (targetPos - currentPos).Unit
+                    local distance = (targetPos - currentPos).Magnitude
+                    
+                    if distance > 2 then
+                        hrp.Velocity = Vector3.new(0,0,0) -- กันแรงเหวี่ยง
+                        hrp.CFrame = CFrame.new(currentPos + (direction * (FloatSpeed * 0.05))) -- ค่อยๆ ขยับ
+                    else
+                        -- สลับจุดหมายเมื่อถึงที่หมาย
+                        targetPos = (targetPos == PointB) and PointA or PointB
+                    end
+                end
+            end
+            task.wait(0.05)
+        end
+    end)
+end
+
+-- === UI Interaction ===
+local Input = Tab:CreateInput({
+    Name = "ใส่จำนวนที่ต้องการ",
+    PlaceholderText = "เช่น 100, 1K, 10K, 1M",
+    CurrentValue = "",
+    Callback = function(Text)
+        thresholdValue = toNumberFromUserInput(Text)
+        addExclusionByPathCheck()
+        print("[Brainrot] Threshold set to:", thresholdValue)
+    end
+}, "Input")
+
+local Toggle = Tab:CreateToggle({
+    Name = "ออโต้เก็บ Brainrots",
+    CurrentValue = false,
+    Callback = function(Value)
+        shouldRun = Value
+        if Value then
+            addExclusionByPathCheck()
+            startPatrol()
+            print("[Brainrot] Started Patrol Mode")
+        else
+            print("[Brainrot] Stopped")
+        end
+    end
+}, "Toggle")
+
+-- เริ่มต้นตรวจสอบ Exclusion ครั้งแรก
+addExclusionByPathCheck()
+
+
+
+
+
+
+
+
+
+
+
+
+local Run = false
+
+local Toggle = Tab:CreateToggle({
+	Name = "ออโต้เก็บเงิน",
+	Description = nil,
+	CurrentValue = false,
+	Callback = function(Value)
+		Run = Value
+
+		if Run then
+			task.spawn(function()
+				while Run do
+					for i = 1, 50 do
+						local args = {
+							i
+						}
+
+						game:GetService("ReplicatedStorage")
+							:WaitForChild("Remotes")
+							:WaitForChild("Server")
+							:WaitForChild("CollectEarnings")
+							:FireServer(unpack(args))
+					end
+
+					task.wait(0.01) -- ทุกๆ 0.01 วิ
+				end
+			end)
+		end
+	end
+}, "Toggle")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local Tab = Window:CreateTab({
+    Name = "ฟังชั่นเสริม",
+    Icon = "view_in_ar",
+    ImageSource = "Material",
+    ShowTitle = true -- This will determine whether the big header text in the tab will show
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- ค่าเริ่มต้น
+local walkSpeedValue = 16
+local jumpPowerValue = 50
+
+local walkToggle = false
+local jumpToggle = false
+
+-- ฟังก์ชันดึง Humanoid
+local function getHumanoid()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return char:WaitForChild("Humanoid")
+end
+
+-- ===================== SLIDER เดิน =====================
+Tab:CreateSlider({
+    Name = "ปรับความเร็วการเดิน",
+    Range = {0, 200},
+    Increment = 5,
+    CurrentValue = 16,
+    Callback = function(Value)
+        walkSpeedValue = Value
+        if walkToggle then
+            getHumanoid().WalkSpeed = walkSpeedValue
+        end
+    end
+}, "Slider")
+
+-- ===================== SLIDER กระโดด =====================
+Tab:CreateSlider({
+    Name = "ปรับการกระโดด",
+    Range = {0, 200},
+    Increment = 5,
+    CurrentValue = 50,
+    Callback = function(Value)
+        jumpPowerValue = Value
+        if jumpToggle then
+            getHumanoid().JumpPower = jumpPowerValue
+        end
+    end
+}, "Slider")
+
+-- ===================== TOGGLE เดิน =====================
+Tab:CreateToggle({
+    Name = "การเดิน",
+    CurrentValue = false,
+    Callback = function(Value)
+        walkToggle = Value
+        local humanoid = getHumanoid()
+
+        if Value then
+            humanoid.WalkSpeed = walkSpeedValue
+        else
+            humanoid.WalkSpeed = 16 -- ค่าเดิม Roblox
+        end
+    end
+}, "Toggle")
+
+-- ===================== TOGGLE กระโดด =====================
+Tab:CreateToggle({
+    Name = "การกระโดด",
+    CurrentValue = false,
+    Callback = function(Value)
+        jumpToggle = Value
+        local humanoid = getHumanoid()
+
+        if Value then
+            humanoid.JumpPower = jumpPowerValue
+        else
+            humanoid.JumpPower = 50 -- ค่าเดิม Roblox
+        end
+    end
+}, "Toggle")
+
+
+
+
+
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local LocalPlayer = Players.LocalPlayer
+
+local AntiAFK = false
+
+local Toggle = Tab:CreateToggle({
+    Name = "กันรีจอย / กัน AFK",
+    Description = "ป้องกันโดนเด้งเวลาอยู่นิ่งนาน ๆ",
+    CurrentValue = false,
+    Callback = function(Value)
+        AntiAFK = Value
+
+        if AntiAFK then
+            task.spawn(function()
+                while AntiAFK do
+                    -- หลอกว่าเรายังกดปุ่มอยู่
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton2(Vector2.new(0, 0))
+
+                    task.wait(60) -- ทำทุก 60 วินาที (ปลอดภัย)
+                end
+            end)
+        end
+    end
+}, "Toggle")
+
+
+
+
+
+
+-- SERVICES
+local Lighting = game:GetService("Lighting")
+
+-- สร้าง Effect (ถ้ายังไม่มี)
+local ColorCorrection = Lighting:FindFirstChild("Visual_Color") or Instance.new("ColorCorrectionEffect")
+ColorCorrection.Name = "Visual_Color"
+ColorCorrection.Parent = Lighting
+
+local Bloom = Lighting:FindFirstChild("Visual_Bloom") or Instance.new("BloomEffect")
+Bloom.Name = "Visual_Bloom"
+Bloom.Parent = Lighting
+
+local SunRays = Lighting:FindFirstChild("Visual_SunRays") or Instance.new("SunRaysEffect")
+SunRays.Name = "Visual_SunRays"
+SunRays.Parent = Lighting
+
+local Atmosphere = Lighting:FindFirstChild("Visual_Atmosphere") or Instance.new("Atmosphere")
+Atmosphere.Name = "Visual_Atmosphere"
+Atmosphere.Parent = Lighting
+
+
+-- SLIDER
+local Slider = Tab:CreateSlider({
+	Name = "Visual Strength",
+	Range = {0, 200},
+	Increment = 5,
+	CurrentValue = 0,
+	Callback = function(Value)
+
+		-- แปลงค่า 0–200 → 0–1
+		local v = Value / 200
+
+		-- COLOR (สีสด + คม)
+		ColorCorrection.Saturation = 0.6 * v
+		ColorCorrection.Contrast = 0.35 * v
+		ColorCorrection.Brightness = 0.08 * v
+
+		-- BLOOM (แสงสะท้อน)
+		Bloom.Intensity = 2 * v
+		Bloom.Size = 24 + (20 * v)
+		Bloom.Threshold = 1
+
+		-- SUN RAYS (แสงแดด)
+		SunRays.Intensity = 0.25 * v
+		SunRays.Spread = 0.9
+
+		-- ATMOSPHERE (หมอก + มิติ)
+		Atmosphere.Density = 0.3 * v
+		Atmosphere.Offset = 0.25
+		Atmosphere.Glare = 0.4 * v
+		Atmosphere.Haze = 1.5 * v
+
+	end
+}, "Slider")
+
+
+
+
+
+
+
+
+
+
+
+
+local ConfigTab = Window:CreateTab({
+	Name = "Config Tab",
+	Icon = "settings",
+	ImageSource = "Material",
+	ShowTitle = true
+})
+
+ConfigTab:BuildConfigSection()
