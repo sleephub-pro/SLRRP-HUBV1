@@ -201,7 +201,7 @@ Tab:Toggle({
                 local currentY = greenBar.AbsolutePosition.Y
 
                 -- ยิงทันทีตอน "หลอดขึ้น" และแตะถึง 600
-                if lastY > 650 and currentY <= 650 then
+                if lastY > 630 and currentY <= 630 then
                     local args = {
                         "ProgressUpdate",
                         {
