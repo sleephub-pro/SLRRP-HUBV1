@@ -10,7 +10,7 @@ local Window = Library:Window({
     Icon = 113876946783161,
     Theme = "Dark",
     Config = {
-        Keybind = Enum.KeyCode.LeftControl,
+        Keybind = Enum.KeyCode.T,
         Size = UDim2.new(0, 500, 0, 400)
     },
     CloseUIButton = {
@@ -27,49 +27,29 @@ Tab:Section({ Title = "ออโต้ฟาร์ม" })
 
 
 
-local selectedFish = ""
+local selectedFishes = {} -- เก็บหลายตัว
+local selectedZone = ""
 local toggleEnabled = false
 local floatEnabled = false
 
--- ฟังก์ชันสำหรับดึงรายชื่อปลาทั้งหมดแบบไม่ซ้ำกัน
-local function getUniqueFishNames()
-    local names = {}
-    local hash = {} -- ใช้ตรวจสอบชื่อซ้ำ
-    local fishFolder = workspace:WaitForChild("Game"):WaitForChild("Fish"):WaitForChild("client")
-    
-    for _, fish in pairs(fishFolder:GetChildren()) do
-        local stats = fish:FindFirstChild("Head")
-            and fish.Head:FindFirstChild("stats")
-            and fish.Head.stats:FindFirstChild("Fish")
-
-        if stats and (stats:IsA("TextLabel") or stats:IsA("TextBox")) then
-            local fishName = stats.Text
-            if fishName ~= "" and not hash[fishName] then
-                table.insert(names, fishName)
-                hash[fishName] = true
-            end
-        end
-    end
-    return names
-end
-
--- ฟังก์ชันหา Model ปลาที่ใกล้ตัวผู้เล่นที่สุดตามชื่อที่เลือก
-local function getClosestFishByName(targetName)
+-- ================= หา Model ปลาที่ใกล้ที่สุดจากหลายชื่อ =================
+local function getClosestFishFromList()
     local closestFish = nil
     local shortestDistance = math.huge
+
     local player = game.Players.LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:FindFirstChild("HumanoidRootPart")
-    
     if not rootPart then return nil end
 
-    local fishFolder = workspace.Game.Fish.client
+    local fishFolder = workspace:WaitForChild("Game"):WaitForChild("Fish"):WaitForChild("client")
+
     for _, fish in pairs(fishFolder:GetChildren()) do
         local stats = fish:FindFirstChild("Head")
             and fish.Head:FindFirstChild("stats")
             and fish.Head.stats:FindFirstChild("Fish")
 
-        if stats and stats.Text == targetName then
+        if stats and table.find(selectedFishes, stats.Text) then
             local targetPart = fish.PrimaryPart or fish:FindFirstChild("Head")
             if targetPart then
                 local distance = (rootPart.Position - targetPart.Position).Magnitude
@@ -80,40 +60,65 @@ local function getClosestFishByName(targetName)
             end
         end
     end
+
     return closestFish
 end
 
+-- ================= ตารางปลาแต่ละโซน =================
+local fishByZone = {
+    ["Forgotten Deep"] = {"Barracuda","Mahi Mahi","Tang","Salmon","Pufferfish","Lionfish","Clownfish","Blue Tang"},
+    ["Ocean"] = {"Barracuda","Mahi Mahi","Tang","Salmon"},
+    ["Ancient Sands"] = {"Bigmouthfish","Ancient Shark","Cavefish","Shark","Grouper","Scorpionfish","Blackfin Tuna","Cod","Pompano"},
+    ["Spirit Roots"] = {"Dragonfish","Whale","Eyefish","Hammer Shark","Sailfish","Narwhal","Sunfish","Napoleon","Jellyfish","Pacific Fanfish"},
+    ["Angler Cave"] = {"King Anglerfish","Anglerfish","Biobfish","Piranha"}
+}
+
 -- ================= UI =================
 
--- Dropdown สำหรับเลือกชื่อปลา
-Tab:Dropdown({
-    Title = "เลือกชื่อปลา",
-    List = getUniqueFishNames(),
-    Value = "",
+-- Dropdown โซน
+local zoneDropdown = Tab:Dropdown({
+    Title = "โซน",
+    List = {"Forgotten Deep","Ocean","Ancient Sands","Spirit Roots","Angler Cave"},
+    Value = "Forgotten Deep",
     Callback = function(choice)
-        selectedFish = choice
-        print("Selected Fish:", selectedFish)
+        selectedZone = choice
+        selectedFishes = {} -- รีเซ็ตเมื่อเปลี่ยนโซน
+
+        if fishDropdown then
+            fishDropdown:Refresh(fishByZone[choice] or {})
+        end
     end
 })
 
--- Toggle Auto Catch
+-- Dropdown ปลา (Multi)
+fishDropdown = Tab:Dropdown({
+    Title = "เลือกชื่อปลา",
+    List = fishByZone["Forgotten Deep"],
+    Multi = true,
+    Default = {},
+    Callback = function(values)
+        selectedFishes = values or {}
+
+        print("Selected Fishes:")
+        for _, v in ipairs(selectedFishes) do
+            print("-", v)
+        end
+    end
+})
+
+-- ================= Toggle Auto Catch =================
 Tab:Toggle({
     Title = "ยิงปลา",
-    Desc = "",
     Value = false,
     Callback = function(v)
         toggleEnabled = v
-        
+
         task.spawn(function()
             while toggleEnabled do
-                if selectedFish ~= "" then
-                    local targetModel = getClosestFishByName(selectedFish)
-                    
+                if #selectedFishes > 0 then
+                    local targetModel = getClosestFishFromList()
+
                     if targetModel then
-                        local args = {
-                            targetModel.Name
-                        }
-                        
                         game:GetService("ReplicatedStorage")
                             :WaitForChild("common")
                             :WaitForChild("packages")
@@ -122,38 +127,40 @@ Tab:Toggle({
                             :WaitForChild("HarpoonService")
                             :WaitForChild("RF")
                             :WaitForChild("StartCatching")
-                            :InvokeServer(unpack(args))
+                            :InvokeServer(targetModel.Name)
                     end
                 end
-                task.wait(0.5)
+                task.wait(0.05)
             end
         end)
     end
 })
 
--- Toggle ลอยไปหา Model ตัวที่ใกล้ที่สุด
+-- ================= Toggle ลอยไปหา =================
 Tab:Toggle({
     Title = "ลอยไปหาปลา",
-    Desc = "",
     Value = false,
     Callback = function(v)
         floatEnabled = v
 
         task.spawn(function()
             while floatEnabled do
-                if selectedFish ~= "" then
-                    local targetModel = getClosestFishByName(selectedFish)
-                    local player = game.Players.LocalPlayer
-                    local character = player.Character
-                    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if #selectedFishes > 0 then
+                    local targetModel = getClosestFishFromList()
 
-                    if targetModel and rootPart then
-                        local targetPart = targetModel.PrimaryPart or targetModel:FindFirstChild("Head")
-                        if targetPart then
-                            rootPart.CFrame = rootPart.CFrame:Lerp(
-                                targetPart.CFrame * CFrame.new(0, 3, 0),
-                                0.15
-                            )
+                    if targetModel then
+                        local player = game.Players.LocalPlayer
+                        local character = player.Character
+                        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+                        if rootPart then
+                            local targetPart = targetModel.PrimaryPart or targetModel:FindFirstChild("Head")
+                            if targetPart then
+                                rootPart.CFrame = rootPart.CFrame:Lerp(
+                                    targetPart.CFrame * CFrame.new(0, 3, 0),
+                                    0.15
+                                )
+                            end
                         end
                     end
                 end
@@ -162,6 +169,9 @@ Tab:Toggle({
         end)
     end
 })
+
+
+
 
 
 
@@ -233,6 +243,110 @@ Tab:Toggle({
         end
     end
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local toggleEnabled = false
+
+-- Remote
+local CancelMinigame = ReplicatedStorage
+    :WaitForChild("common")
+    :WaitForChild("packages")
+    :WaitForChild("Knit")
+    :WaitForChild("Services")
+    :WaitForChild("MinigameService")
+    :WaitForChild("RF")
+    :WaitForChild("CancelMinigame")
+
+local CollectFish = ReplicatedStorage
+    :WaitForChild("common")
+    :WaitForChild("packages")
+    :WaitForChild("Knit")
+    :WaitForChild("Services")
+    :WaitForChild("FishService")
+    :WaitForChild("RF")
+    :WaitForChild("CollectFish")
+
+-- หา HumanoidRootPart
+local function getRoot()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return char:WaitForChild("HumanoidRootPart")
+end
+
+-- หา Model ปลาที่ใกล้สุดในระยะ 10
+local function getNearestFish()
+    local root = getRoot()
+    local nearest = nil
+    local shortestDistance = 10 -- จำกัดระยะ 10 studs
+
+    local fishFolder = workspace
+        :WaitForChild("Game")
+        :WaitForChild("Fish")
+        :WaitForChild("client")
+
+    for _, fish in ipairs(fishFolder:GetChildren()) do
+        if fish:IsA("Model") and fish.PrimaryPart then
+            local distance = (fish.PrimaryPart.Position - root.Position).Magnitude
+            if distance <= shortestDistance then
+                shortestDistance = distance
+                nearest = fish
+            end
+        end
+    end
+
+    return nearest
+end
+
+-- Loop ทำงานทุก 0.01 วิ
+task.spawn(function()
+    while true do
+        if toggleEnabled then
+            pcall(function()
+                CancelMinigame:InvokeServer()
+
+                local nearestFish = getNearestFish()
+                if nearestFish then
+                    local args = { nearestFish.Name }
+                    CollectFish:InvokeServer(unpack(args))
+                end
+            end)
+        end
+        task.wait(0.01)
+    end
+end)
+
+-- UI Toggle
+Tab:Toggle({
+    Title = "ดึงปลาโคตรเร็ซ (เบต้า)",
+    Desc = "",
+    Value = false,
+    Callback = function(v)
+        toggleEnabled = v
+    end
+})
+
+
+
+
+
 
 
 
@@ -491,6 +605,7 @@ Tab:Toggle({
 
 
 
+
 -- ===================== EXTRA TAB =====================
 Window:Line()
 local Extra = Window:Tab({ Title = "Extra", Icon = "tag" })
@@ -593,7 +708,7 @@ Settings:Toggle({
 
 -- ===================== NOTIFY =====================
 Window:Notify({
-    Title = "x2zu",
+    Title = "SLEEP HUB",
     Desc = "UI Loaded Successfully",
     Time = 4
 })
