@@ -67,6 +67,10 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Steal%20From%20Brainrots",
         name = "Steal From Brainrots"
     },
+    [127794225497302] = { -- Abyss [BETA]
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Abyss%20%5BBETA%5D",
+        name = "Abyss [BETA]"
+    },
     [120564326011184] = { -- Build a YouTube Empire!
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
         name = "Build a YouTube Empire!"
