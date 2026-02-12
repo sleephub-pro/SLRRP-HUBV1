@@ -329,7 +329,7 @@ task.spawn(function()
                 end
             end)
         end
-        task.wait(0.01)
+        task.wait(0.)
     end
 end)
 
@@ -603,12 +603,242 @@ Tab:Toggle({
 
 
 
+local Tab = Window:Tab({ Title = "เทเลพอต", Icon = "starFill" })
+Tab:Section({ Title = "เทเลพอต" })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local selectedPlace = nil
+local flying = false
+local speed = 8
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local teleportersFolder = workspace:WaitForChild("Game"):WaitForChild("Teleporters")
+
+-- ================= Noclip Character =================
+local function setNoclip(character, state)
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = not state
+        end
+    end
+end
+
+-- ================= หาเป้าหมาย =================
+local function getTarget(placeName)
+    local teleporter = teleportersFolder:FindFirstChild(placeName)
+    if not teleporter then return nil end
+
+    if teleporter:IsA("Model") then
+        return teleporter.PrimaryPart 
+            or teleporter:FindFirstChildWhichIsA("BasePart")
+    end
+
+    if teleporter:IsA("BasePart") then
+        return teleporter
+    end
+end
+
+-- ================= Dropdown =================
+Tab:Dropdown({
+    Title = "เลือกจุดที่จะไป", 
+    List = {"Spirit Roots","Forgotten Deep","Ancient Sands"}, 
+    Value = "Spirit Roots",
+
+    Callback = function(choice)
+        selectedPlace = choice
+    end
+})
+
+-- ================= Toggle =================
+Tab:Toggle({
+    Title = "บินไปจุดที่เลือก",
+    Value = false,
+
+    Callback = function(v)
+        flying = v
+
+        if flying then
+            task.spawn(function()
+
+                local character = player.Character or player.CharacterAdded:Wait()
+                local root = character:WaitForChild("HumanoidRootPart")
+                local humanoid = character:WaitForChild("Humanoid")
+
+                -- เปิดทะลุตัวละคร
+                setNoclip(character, true)
+
+                -- [[ เพิ่มส่วนทะลุ Map Terrain ]] --
+                if workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Terrain") then
+                    for _, obj in pairs(workspace.Map.Terrain:GetDescendants()) do
+                        if obj:IsA("BasePart") then
+                            obj.CanCollide = false
+                        end
+                    end
+                end
+
+                -- เข้า Physics mode ชั่วคราว
+                humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+
+                while flying and character.Parent do
+
+                    local target = getTarget(selectedPlace)
+                    if not target then break end
+
+                    local direction = (target.Position - root.Position)
+                    local distance = direction.Magnitude
+
+                    if distance < 6 then
+                        break
+                    end
+
+                    root.CFrame = root.CFrame + direction.Unit * speed
+                    RunService.RenderStepped:Wait()
+                end
+
+                -- ====== คืนค่าปกติ ======
+                setNoclip(character, false)
+
+                -- คืนค่า Map Terrain (เพื่อให้ยืนได้เมื่อถึงที่หมาย)
+                if workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Terrain") then
+                    for _, obj in pairs(workspace.Map.Terrain:GetDescendants()) do
+                        if obj:IsA("BasePart") then
+                            obj.CanCollide = true
+                        end
+                    end
+                end
+
+                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+
+                flying = false
+            end)
+        end
+    end
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:Section({ Title = "ทำเควส" })
+
+
+
+
+
+
+
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local featureEnabled = false
+
+Tab:Toggle({
+    Title = "ทำเควสเปิดประตู",
+    Desc = "",
+    Value = false,
+    Callback = function(v)
+        featureEnabled = v
+
+        if v then
+            task.spawn(function()
+
+                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local root = character:WaitForChild("HumanoidRootPart")
+
+                local teleporterFolder = workspace:WaitForChild("Game")
+                    :WaitForChild("QuestItems")
+                    :WaitForChild("TeleporterParts")
+
+                -- วนลูปเก็บของ
+                for _, item in pairs(teleporterFolder:GetChildren()) do
+                    if not featureEnabled then return end
+
+                    if item:IsA("Model") or item:IsA("BasePart") then
+                        
+                        local targetPart = item:FindFirstChildWhichIsA("BasePart") or item
+                        
+                        if targetPart then
+                            -- วาปไปหา
+                            root.CFrame = targetPart.CFrame + Vector3.new(0,3,0)
+                            task.wait(0.5)
+
+                            -- หา ProximityPrompt
+                            local prompt = item:FindFirstChildWhichIsA("ProximityPrompt", true)
+                            if prompt then
+                                fireproximityprompt(prompt)
+                                task.wait(0.5)
+                            end
+                        end
+                    end
+                end
+
+                -- เช็คว่าหมดแล้วจริงไหม
+                if featureEnabled and #teleporterFolder:GetChildren() == 0 then
+                    
+                    local scientist = workspace:WaitForChild("Game")
+                        :WaitForChild("Interactables")
+                        :WaitForChild("Npc")
+                        :WaitForChild("Scientist")
+
+                    local npcPart = scientist:FindFirstChildWhichIsA("BasePart", true)
+
+                    if npcPart then
+                        root.CFrame = npcPart.CFrame + Vector3.new(0,3,0)
+                    end
+
+                    featureEnabled = false -- หยุดทำงาน
+                end
+
+            end)
+        end
+    end
+})
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 -- ===================== EXTRA TAB =====================
 Window:Line()
-local Extra = Window:Tab({ Title = "Extra", Icon = "tag" })
+local Extra = Window:Tab({ Title = "ฟั่งชั้นเสริม", Icon = "tag" })
 Extra:Section({ Title = "Player Stats" })
 
 local Players = game:GetService("Players")
@@ -639,7 +869,7 @@ end
 
 -- Slider WalkSpeed
 Extra:Slider({
-    Title = "WalkSpeed",
+    Title = "ปรับความเร็วการวิ่ง",
     Min = 0,
     Max = 100,
     Value = walkSpeedValue,
@@ -653,7 +883,7 @@ Extra:Slider({
 
 -- Slider JumpPower
 Extra:Slider({
-    Title = "JumpPower",
+    Title = "ปรับการกระโดด",
     Min = 0,
     Max = 150,
     Value = jumpPowerValue,
@@ -667,7 +897,7 @@ Extra:Slider({
 
 -- Toggle WalkSpeed
 Extra:Toggle({
-    Title = "Enable WalkSpeed",
+    Title = "เปิดใช้งานความเร็วการวิ่ง",
     Value = false,
     Callback = function(v)
         walkEnabled = v
@@ -677,7 +907,7 @@ Extra:Toggle({
 
 -- Toggle JumpPower
 Extra:Toggle({
-    Title = "Enable JumpPower",
+    Title = "เปิเใช้งานความกระโดดสูง",
     Value = false,
     Callback = function(v)
         jumpEnabled = v
