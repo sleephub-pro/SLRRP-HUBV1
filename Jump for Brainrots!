@@ -146,7 +146,7 @@ local ToggleState = false
 local Working = false
 
 Tab:Toggle({
-    Title = "ออโต้ REbirth/ออโต้อัพการกระโดด",
+    Title = "ออโต้ Rebirth/ออโต้อัพการกระโดด",
     Desc = "",
     Value = false,
     Callback = function(v)
