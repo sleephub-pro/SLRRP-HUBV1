@@ -131,7 +131,109 @@ Tab:Toggle({
                     }
                     Knit:WaitForChild("UpdateCFrame"):InvokeServer(unpack(args3))
 
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+
+
+
+
+
+repeat task.wait() until game:IsLoaded()
+
+local savedProperties = {}
+local running = false
+
+Tab:Toggle({
+    Title = "มอนจับไม่ได้",
+    Desc = "",
+    Value = false,
+    Callback = function(v)
+        running = v
+
+        if v then
+            -- เปิดใช้งาน
+            task.spawn(function()
+                while running do
+                    local folder = workspace:FindFirstChild("BossTouchDetectors")
+                    if folder then
+                        for _, obj in ipairs(folder:GetDescendants()) do
+                            if obj:IsA("BasePart") then
+                                -- เซฟค่าเดิม
+                                if not savedProperties[obj] then
+                                    savedProperties[obj] = {
+                                        CanTouch = obj.CanTouch,
+                                        CanQuery = obj.CanQuery,
+                                        Archivable = obj.Archivable,
+                                        EnableFluidForces = obj:FindFirstChild("EnableFluidForces") and obj.EnableFluidForces or nil
+                                    }
+                                end
+
+                                -- ปิดทั้งหมด
+                                pcall(function()
+                                    obj.CanTouch = false
+                                    obj.CanQuery = false
+                                    obj.Archivable = false
+                                end)
+                            end
+                        end
+                    end
                     task.wait(0.5)
+                end
+            end)
+        else
+            -- ปิดใช้งาน → คืนค่าเดิม
+            for obj, props in pairs(savedProperties) do
+                if obj and obj.Parent then
+                    pcall(function()
+                        if props.CanTouch ~= nil then obj.CanTouch = props.CanTouch end
+                        if props.CanQuery ~= nil then obj.CanQuery = props.CanQuery end
+                        if props.Archivable ~= nil then obj.Archivable = props.Archivable end
+                    end)
+                end
+            end
+
+            savedProperties = {}
+        end
+    end
+})
+
+
+
+
+
+
+
+local ReloadLoop = false
+
+Tab:Toggle({
+    Title = "รีตัว",
+    Desc = "",
+    Value = false,
+    Callback = function(v)
+        ReloadLoop = v
+
+        if v then
+            task.spawn(function()
+                while ReloadLoop do
+                    pcall(function()
+                        game:GetService("ReplicatedStorage")
+                            :WaitForChild("Packages")
+                            :WaitForChild("_Index")
+                            :WaitForChild("sleitnick_knit@1.7.0")
+                            :WaitForChild("knit")
+                            :WaitForChild("Services")
+                            :WaitForChild("PlayerService")
+                            :WaitForChild("RF")
+                            :WaitForChild("ReloadCharacter")
+                            :InvokeServer()
+                    end)
+
+                    task.wait(1) -- ทำงานทุก 1 วินาที
                 end
             end)
         end
@@ -238,6 +340,15 @@ Tab:Toggle({
         end
     end
 })
+
+
+
+
+
+
+
+
+
 
 
 
