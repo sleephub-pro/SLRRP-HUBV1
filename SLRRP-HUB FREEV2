@@ -1,6 +1,6 @@
 repeat task.wait() until game:IsLoaded()
 
-local placeId = game.PlaceId
+local placeId = game.GameId
 
 local supported = {
    [124473577469410] = { -- Be a Lucky Block
