@@ -1,59 +1,350 @@
+-- Load UI Library
+local Library = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/x2zu/OPEN-SOURCE-UI-ROBLOX/refs/heads/main/X2ZU%20UI%20ROBLOX%20OPEN%20SOURCE/DummyUi-leak-by-x2zu/fetching-main/Tools/Framework.luau"
+))()
+
+-- Create Main Window
+local Window = Library:Window({
+    Title = "SLEEP HUB PROMAX",
+    Desc = "Abyss [BETA]",
+    Icon = 113876946783161,
+    Theme = "Dark",
+    Config = {
+        Keybind = Enum.KeyCode.T,
+        Size = UDim2.new(0, 500, 0, 400)
+    },
+    CloseUIButton = {
+        Enabled = true,
+        Text = "SLEEP HUB"
+    }
+})
+
+-- ===================== MAIN TAB =====================
+local Tab = Window:Tab({ Title = "Main", Icon = "star" })
+Tab:Section({ Title = "ออโต้ฟาร์ม" })
+
+
+
+
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local Enabled = false
-local LoopThread
+-- ตัวแปรควบคุม
+local MainEnabled = false
+local SubEnabled = true
 
+-- ระยะวาป 2 แบบ
+local Distance1 = -5
+local Distance2 = -5
+
+-- ฟังก์ชันวาป
+local function TeleportToLine()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+    local hrp = char.HumanoidRootPart
+    local line = workspace:FindFirstChild("Line")
+
+    if line and line:IsA("BasePart") then
+        -- สลับ 2 ระยะ
+        local pos1 = line.CFrame * CFrame.new(0, 0, Distance1)
+        local pos2 = line.CFrame * CFrame.new(0, 0, Distance2)
+
+        -- วาปไป 2 จุดสลับ
+        hrp.CFrame = pos1
+        task.wait(0.1)
+        hrp.CFrame = pos2
+    end
+end
+
+
+-- Loop ทำงาน
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+
+        if MainEnabled and SubEnabled then
+            TeleportToLine()
+        end
+    end
+end)
+
+-- Toggle หลัก
 Tab:Toggle({
-    Title = "Enable Feature",
-    Desc = "วาปไปหาเงินเยอะสุด",
+    Title = "ออโต้ฟาร์ม",
+    Desc = "",
     Value = false,
     Callback = function(v)
-        Enabled = v
+        MainEnabled = v
 
-        if Enabled then
-            LoopThread = task.spawn(function()
-                while Enabled do
-                    local bestTarget = nil
-                    local bestMoney = -math.huge
+        if v then
+            CreateToggleGUI()
+        end
+    end
+})
 
-                    -- วนหาเงินมากสุด
-                    for _, obj in pairs(workspace:WaitForChild("ActiveBrainrots"):GetChildren()) do
-                        pcall(function()
-                            local text = obj.LevelBoard.Frame.CurrencyFrame.Earnings.Text.Text
-                            
-                            -- ดึงตัวเลขจากข้อความ
-                            local money = tonumber(string.gsub(text, "%D", "")) or 0
-                            
-                            if money > bestMoney then
-                                bestMoney = money
-                                bestTarget = obj
-                            end
-                        end)
-                    end
 
-                    -- ถ้าเจอเป้าหมาย
-                    if bestTarget and bestTarget:FindFirstChild("HumanoidRootPart") then
-                        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 
-                        if hrp then
-                            -- วาปไป
-                            hrp.CFrame = bestTarget.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
 
-                            task.wait(0.2)
 
-                            -- กด ProximityPrompt
-                            for _, v in pairs(bestTarget:GetDescendants()) do
-                                if v:IsA("ProximityPrompt") then
-                                    fireproximityprompt(v)
-                                end
-                            end
-                        end
-                    end
 
-                    task.wait(0.5) -- ปรับความเร็วได้
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Rep = game:GetService("ReplicatedStorage")
+
+local Knit = Rep:WaitForChild("Packages"):WaitForChild("_Index")
+    :WaitForChild("sleitnick_knit@1.7.0")
+    :WaitForChild("knit"):WaitForChild("Services")
+    :WaitForChild("RunningService"):WaitForChild("RF")
+
+local Loop = false
+
+Tab:Toggle({
+    Title = "ใช้คู่กับออโต้ฟาร์ม",
+    Desc = "ต้องใช้ด้วยหัน",
+    Value = false,
+    Callback = function(v)
+        Loop = v
+
+        if v then
+            task.spawn(function()
+                while Loop do
+                    -- Collected
+                    local args1 = {
+                        tostring(Players.LocalPlayer.UserId)
+                    }
+                    Knit:WaitForChild("Collected"):InvokeServer(unpack(args1))
+
+                    -- OpenLuckyBlock
+                    local args2 = {
+                        "base13"
+                    }
+                    Knit:WaitForChild("OpenLuckyBlock"):InvokeServer(unpack(args2))
+
+                    -- UpdateCFrame
+                    local args3 = {
+                        CFrame.new(-385.13861083984375, 42.9075927734375, -2098.420654296875, 
+                        -0.0034904195927083492, -0.3544453978538513, 0.9350701570510864, 
+                        0, 0.9350758194923401, 0.3544475734233856, 
+                        -0.9999938607215881, 0.0012371707707643509, -0.0032638071570545435)
+                    }
+                    Knit:WaitForChild("UpdateCFrame"):InvokeServer(unpack(args3))
+
+                    task.wait(0.5)
                 end
             end)
         end
     end
+})
+
+
+
+
+
+
+
+
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Enabled = false
+local DelayTime = 5 -- ค่าเริ่มต้น
+
+-- ฟังก์ชันเรียกใช้งาน
+local function PlaceBest()
+    pcall(function()
+        ReplicatedStorage
+            :WaitForChild("Packages")
+            :WaitForChild("_Index")
+            :WaitForChild("sleitnick_knit@1.7.0")
+            :WaitForChild("knit")
+            :WaitForChild("Services")
+            :WaitForChild("ContainerService")
+            :WaitForChild("RF")
+            :WaitForChild("PlaceBest")
+            :InvokeServer()
+    end)
+end
+
+-- Loop ทำงาน
+task.spawn(function()
+    while true do
+        if Enabled then
+            PlaceBest()
+        end
+        task.wait(DelayTime)
+    end
+end)
+
+-- Toggle
+Tab:Toggle({
+    Title = "ใส่ตัวที่ดีที่สุด",
+    Desc = "",
+    Value = false,
+    Callback = function(v)
+        Enabled = v
+    end
+})
+
+-- Slider ปรับเวลา
+Tab:Slider({
+    Title = "ปรับเวลา (วินาที)", 
+    Min = 0,
+    Max = 600, 
+    Rounding = 0,
+    Value = 5, 
+    Callback = function(val)
+        DelayTime = val
+    end
+})
+
+
+
+
+
+local running = false
+
+Tab:Toggle({
+    Title = "อัพทั้งหมด",
+    Desc = "",
+    Value = false,
+    Callback = function(v)
+        running = v
+        
+        if v then
+            task.spawn(function()
+                while running do
+                    for i = 1, 50 do
+                        task.spawn(function()
+                            local args = { tostring(i) }
+
+                            game:GetService("ReplicatedStorage")
+                                :WaitForChild("Packages")
+                                :WaitForChild("_Index")
+                                :WaitForChild("sleitnick_knit@1.7.0")
+                                :WaitForChild("knit")
+                                :WaitForChild("Services")
+                                :WaitForChild("ContainerService")
+                                :WaitForChild("RF")
+                                :WaitForChild("UpgradeBrainrot")
+                                :InvokeServer(unpack(args))
+                        end)
+                    end
+
+                    task.wait(0.01)
+                end
+            end)
+        end
+    end
+})
+
+
+
+
+-- ===================== EXTRA TAB =====================
+Window:Line()
+local Extra = Window:Tab({ Title = "ฟั่งชั้นเสริม", Icon = "tag" })
+Extra:Section({ Title = "Player Stats" })
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local walkEnabled, jumpEnabled = false, false
+local walkSpeedValue, jumpPowerValue = 25, 25
+
+local function getHumanoid()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hum = char:WaitForChild("Humanoid")
+
+    -- ⭐ สำคัญมาก
+    hum.UseJumpPower = true
+
+    return hum
+end
+
+local function updateWalk()
+    local hum = getHumanoid()
+    hum.WalkSpeed = walkEnabled and walkSpeedValue or 16
+end
+
+local function updateJump()
+    local hum = getHumanoid()
+    hum.JumpPower = jumpEnabled and jumpPowerValue or 50
+end
+
+-- Slider WalkSpeed
+Extra:Slider({
+    Title = "ปรับความเร็วการวิ่ง",
+    Min = 0,
+    Max = 1000,
+    Value = walkSpeedValue,
+    Callback = function(v)
+        walkSpeedValue = v
+        if walkEnabled then
+            updateWalk()
+        end
+    end
+})
+
+-- Slider JumpPower
+Extra:Slider({
+    Title = "ปรับการกระโดด",
+    Min = 0,
+    Max = 150,
+    Value = jumpPowerValue,
+    Callback = function(v)
+        jumpPowerValue = v
+        if jumpEnabled then
+            updateJump()
+        end
+    end
+})
+
+-- Toggle WalkSpeed
+Extra:Toggle({
+    Title = "เปิดใช้งานความเร็วการวิ่ง",
+    Value = false,
+    Callback = function(v)
+        walkEnabled = v
+        updateWalk()
+    end
+})
+
+-- Toggle JumpPower
+Extra:Toggle({
+    Title = "เปิเใช้งานความกระโดดสูง",
+    Value = false,
+    Callback = function(v)
+        jumpEnabled = v
+        updateJump()
+    end
+})
+
+-- ตอนเกิดตัวใหม่
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.3)
+    updateWalk()
+    updateJump()
+end)
+
+
+-- ===================== SETTINGS TAB =====================
+Window:Line()
+local Settings = Window:Tab({ Title = "Settings", Icon = "wrench" })
+Settings:Section({ Title = "Config" })
+
+Settings:Toggle({
+    Title = "Example Toggle",
+    Value = false,
+    Callback = function(v)
+        print("Settings Toggle:", v)
+    end
+})
+
+-- ===================== NOTIFY =====================
+Window:Notify({
+    Title = "SLEEP HUB",
+    Desc = "UI Loaded Successfully",
+    Time = 4
 })
