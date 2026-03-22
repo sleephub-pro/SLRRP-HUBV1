@@ -7,6 +7,7 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Be%20a%20Lucky%20Block",
         name = "Be a Lucky Block"
     }
+}
 
 local data = supported[placeId]
 if data then
