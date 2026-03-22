@@ -3,83 +3,10 @@ repeat task.wait() until game:IsLoaded()
 local placeId = game.PlaceId
 
 local supported = {
-    [136404558442020] = { -- Kayak & Surf
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/main/Kayak%20and%20Surf",
-        name = "Kayak and Surf"
-    },
-    [134457821643846] = { -- Arcade Slam Simulator
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Arcade%20Slam%20Simulator",
-        name = "Arcade Slam Simulator"
-    },
-    [131623223084840] = { -- Escape Tsunami For Brainrots!
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Escape%20Tsunami%20For%20Brainrots!",
-        name = "Escape Tsunami For Brainrots!"
-    },
-    [118680012754216] = { -- Fish It: MODDED
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Fish%20It%20MODDED",
-        name = "Fish It: MODDED"
-    },
-    [103007810968052] = { -- Chicken Cannon Simulator
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Chicken%20Cannon%20Simulator",
-        name = "Chicken Cannon Simulator"
-    },
-    [126881587516442] = { -- Break a Friend
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/main/Break%20a%20Friend",
-        name = "Break a Friend"
-    },
-    [75985597910430] = { -- +1 Speed School Escape.lua
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%2B1%20Speed%20School%20Escape.lua",
-        name = "+1 Speed School Escape.lua"
-    },
-    [85050171250159] = { -- Poop a Big Poop
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Poop%20a%20Big%20Poop.lua",
-        name = "Poop a Big Poop"
-    },
-    [124311897657957] = { -- Break a Lucky Block!
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Break%20a%20Lucky%20Block!",
-        name = "Break a Lucky Block!"
-    },
-    [86260905411899] = { -- Train to Escape Prison
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/%5B⭐%EF%B8%8FUPD4%5DTrain%20to%20Escape%20Prison",
-        name = "Train to Escape Prisong"
-    },
-    [101953168527257] = { -- Spear Fishing
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Spear%20FishinsFree.lua",
-        name = "Train Spear Fishing"
-    },
-    [127718588961610] = { -- Snow Shovel Battle
-        url = "https://raw.githubusercontent.com/sleephub-pro/FREE/refs/heads/main/Snow%20Shovel%20Battle",
-        name = "Train Snow Shovel Battleg"
-    },
-[103571191458177] = { -- Dig Legends
-        url = "https://raw.githubusercontent.com/sleephub-pro/FREE/refs/heads/main/Dig%20Legends",
-        name = "Train Dig Legends"
-    },
-    [123557829667240] = { -- Chop Your Tree
-        url = "https://raw.githubusercontent.com/sleephub-pro/FREE/refs/heads/main/Chop%20Your%20Tree",
-        name = "Train Chop Your Tree"
-    },
-    [119579217517090] = { -- Escape Waves For Lucky Blocks
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Escape%20Waves%20For%20Lucky%20Blocks.lua",
-        name = "Escape Waves For Lucky Blocks"
-    },
-    [134763881293027] = { -- Steal From Brainrots
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Steal%20From%20Brainrots",
-        name = "Steal From Brainrots"
-    },
-    [127794225497302] = { -- Abyss [BETA]
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Abyss%20%5BBETA%5D",
-        name = "Abyss [BETA]"
-    },
    [124473577469410] = { -- Be a Lucky Block
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Be%20a%20Lucky%20Block",
         name = "Be a Lucky Block"
-    },
-    [120564326011184] = { -- Build a YouTube Empire!
-        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUB/refs/heads/main/Build%20a%20YouTube%20Empire!",
-        name = "Build a YouTube Empire!"
     }
-}
 
 local data = supported[placeId]
 if data then
