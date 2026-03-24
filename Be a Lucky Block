@@ -6,7 +6,7 @@ local Library = loadstring(game:HttpGet(
 -- Create Main Window
 local Window = Library:Window({
     Title = "SLEEP HUB PROMAX",
-    Desc = "Abyss [BETA]",
+    Desc = "Be a Lucky Block",
     Icon = 113876946783161,
     Theme = "Dark",
     Config = {
