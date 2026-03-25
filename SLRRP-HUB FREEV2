@@ -7,7 +7,6 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Be%20a%20Lucky%20Block",
         name = "Be a Lucky Block"
     },
-local supported = {
     [84514721527976] = { -- Dig DEEPER for Brainrots!
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Dig%20DEEPER%20for%20Brainrots!",
         name = "Dig DEEPER for Brainrots!"
