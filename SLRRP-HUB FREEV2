@@ -7,10 +7,13 @@ local supported = {
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Be%20a%20Lucky%20Block",
         name = "Be a Lucky Block"
     },
-local supported = {
     [114349086251135] = { -- Open Sea For Brainrots!
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Open%20Sea%20For%20Brainrots!",
         name = "Open Sea For Brainrots!"
+    },
+    [77937315652211] = { -- The Gluttony 😈
+        url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/The%20Gluttony%20😈",
+        name = "The Gluttony 😈"
     },
     [84514721527976] = { -- Dig DEEPER for Brainrots!
         url = "https://raw.githubusercontent.com/sleephub-pro/SLRRP-HUBV1/refs/heads/main/Dig%20DEEPER%20for%20Brainrots!",
