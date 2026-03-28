@@ -118,20 +118,17 @@ Tab:Toggle({
 
                     -- OpenLuckyBlock
                     local args2 = {
-                        "base13"
+                        "base14"
                     }
                     Knit:WaitForChild("OpenLuckyBlock"):InvokeServer(unpack(args2))
 
                     -- UpdateCFrame
                     local args3 = {
-                        CFrame.new(-385.13861083984375, 42.9075927734375, -2098.420654296875, 
-                        -0.0034904195927083492, -0.3544453978538513, 0.9350701570510864, 
-                        0, 0.9350758194923401, 0.3544475734233856, 
-                        -0.9999938607215881, 0.0012371707707643509, -0.0032638071570545435)
+                        CFrame.new(-447.7276306152344, 53.15495681762695, -2105.200439453125, -0.22733141481876373, -0.4279487431049347, 0.8747458457946777, 0, 0.8982647657394409, 0.4394547641277313, -0.9738175272941589, 0.09990186989307404, -0.2042037695646286)
                     }
                     Knit:WaitForChild("UpdateCFrame"):InvokeServer(unpack(args3))
 
-                    task.wait(0.1)
+                    task.wait(0.01)
                 end
             end)
         end
@@ -346,7 +343,26 @@ Tab:Toggle({
 
 
 
+Tab:Toggle({
+    Title = "ลดความแลค",
+    Desc = "",
+    Value = false,
+    Callback = function(v)
+        getgenv().AutoDeleteRunningModels = v
 
+        while getgenv().AutoDeleteRunningModels do
+            local folder = workspace:FindFirstChild("RunningModels")
+            
+            if folder then
+                for _, obj in ipairs(folder:GetChildren()) do
+                    obj:Destroy()
+                end
+            end
+            
+            task.wait(0.1) -- ปรับความเร็วได้ (ยิ่งน้อยยิ่งลบไว)
+        end
+    end
+})
 
 
 
